@@ -6,233 +6,224 @@
 <title>NJ Weather Forecast Map | NJ.com</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
   :root {
-    --nj-charcoal: #1B1B1B;
-    --nj-dark: #222233;
-    --nj-green: #84c341;
-    --nj-orange: #FF6B35;
-    --nj-red: #E8333A;
-    --nj-white: #FFFFFF;
-    --nj-gray: #8A8FA0;
-    --nj-border: #2E2E42;
-    --nj-card: #262638;
-    --nj-map-bg: #CADAE8;
-    --nj-map-land: #E8EDF3;
-    --radius: 8px;
+    --nj-charcoal:#1B1B1B; --nj-dark:#222233; --nj-green:#84c341;
+    --nj-orange:#FF6B35; --nj-red:#E8333A; --nj-white:#FFFFFF;
+    --nj-gray:#8A8FA0; --nj-border:#2E2E42; --nj-card:#262638;
+    --radius:8px;
   }
   body {
-    font-family: 'Libre Franklin', Arial, sans-serif;
-    background: var(--nj-charcoal);
-    color: var(--nj-white);
-    line-height: 1.4;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
+    font-family:'Libre Franklin',Arial,sans-serif;
+    background:var(--nj-charcoal); color:var(--nj-white);
+    line-height:1.4; -webkit-font-smoothing:antialiased;
   }
   .widget-container {
-    max-width: 480px; margin: 0 auto;
-    background: var(--nj-dark); min-height: 100dvh;
+    max-width:480px; margin:0 auto;
+    background:var(--nj-dark); min-height:100dvh;
+    display:flex; flex-direction:column;
   }
 
   /* HEADER */
   .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 14px; background: #555;
-    border-bottom: 3px solid var(--nj-green);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 14px; background:#555;
+    border-bottom:3px solid var(--nj-green);
   }
-  .header-logo img { height: 32px; width: auto; display: block; }
-  .header-right { display: flex; align-items: center; gap: 6px; }
-  .header-weather-icon { font-size: 16px; }
+  .header-logo img { height:32px; width:auto; display:block; }
+  .header-right { display:flex; align-items:center; gap:6px; }
   .header-title {
-    font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1.2px;
-    color: var(--nj-white); opacity: 0.85;
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:1.2px; color:var(--nj-white); opacity:0.85;
   }
 
   /* ALERTS */
   .alerts-banner {
-    display: none; background: var(--nj-red);
-    color: var(--nj-white); cursor: pointer;
+    display:none; background:var(--nj-red);
+    color:var(--nj-white); cursor:pointer;
   }
-  .alerts-banner.active { display: block; }
+  .alerts-banner.active { display:block; }
   .alerts-banner-inner {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 14px; font-size: 12px; font-weight: 700; min-height: 36px;
+    display:flex; align-items:center; gap:8px;
+    padding:8px 14px; font-size:12px; font-weight:700; min-height:36px;
   }
-  .alert-icon { flex-shrink: 0; font-size: 14px; }
-  .alert-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .alert-icon { flex-shrink:0; font-size:14px; }
+  .alert-text { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
   .alert-count {
-    flex-shrink: 0; background: rgba(255,255,255,0.25);
-    border-radius: 10px; padding: 2px 8px; font-size: 10px; font-weight: 800;
+    flex-shrink:0; background:rgba(255,255,255,0.25);
+    border-radius:10px; padding:2px 8px; font-size:10px; font-weight:800;
   }
-  .alert-severity-watch { background: #B8860B; }
-  .alert-severity-advisory { background: #5B7BA3; }
+  .alert-severity-watch { background:#B8860B; }
+  .alert-severity-advisory { background:#5B7BA3; }
   .alerts-detail {
-    display: none; background: #2a1a1a;
-    max-height: 200px; overflow-y: auto; border-bottom: 2px solid var(--nj-red);
+    display:none; background:#2a1a1a;
+    max-height:200px; overflow-y:auto; border-bottom:2px solid var(--nj-red);
   }
-  .alerts-detail.open { display: block; }
+  .alerts-detail.open { display:block; }
   .alert-item {
-    padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
-    font-size: 12px; line-height: 1.5;
+    padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.08);
+    font-size:12px; line-height:1.5;
   }
-  .alert-item:last-child { border-bottom: none; }
-  .alert-item-title { font-weight: 700; color: var(--nj-orange); margin-bottom: 3px; }
-  .alert-item-areas { color: var(--nj-gray); font-size: 11px; margin-bottom: 3px; }
+  .alert-item:last-child { border-bottom:none; }
+  .alert-item-title { font-weight:700; color:var(--nj-orange); margin-bottom:3px; }
+  .alert-item-areas { color:var(--nj-gray); font-size:11px; margin-bottom:3px; }
   .alert-item-desc {
-    color: #ccc; font-size: 11px;
-    display: -webkit-box; -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical; overflow: hidden;
+    color:#ccc; font-size:11px;
+    display:-webkit-box; -webkit-line-clamp:3;
+    -webkit-box-orient:vertical; overflow:hidden;
   }
 
-  /* SEARCH BAR */
-  .search-bar {
-    padding: 8px 14px;
-    background: rgba(0,0,0,0.25);
-    position: relative;
-  }
-  .search-wrapper {
-    position: relative;
-  }
+  /* SEARCH */
+  .search-bar { padding:8px 14px; background:rgba(0,0,0,0.25); position:relative; }
+  .search-wrapper { position:relative; }
   .search-input {
-    width: 100%; padding: 8px 12px 8px 32px;
-    background: var(--nj-card); border: 1px solid var(--nj-border);
-    border-radius: var(--radius); color: var(--nj-white);
-    font-family: inherit; font-size: 13px; font-weight: 500;
-    outline: none; transition: border-color 0.2s;
+    width:100%; padding:8px 12px 8px 32px;
+    background:var(--nj-card); border:1px solid var(--nj-border);
+    border-radius:var(--radius); color:var(--nj-white);
+    font-family:inherit; font-size:13px; font-weight:500; outline:none;
+    transition:border-color 0.2s;
   }
-  .search-input::placeholder { color: #666E80; }
-  .search-input:focus { border-color: var(--nj-green); }
+  .search-input::placeholder { color:#666E80; }
+  .search-input:focus { border-color:var(--nj-green); }
   .search-icon {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    font-size: 14px; opacity: 0.4; pointer-events: none;
+    position:absolute; left:10px; top:50%; transform:translateY(-50%);
+    font-size:14px; opacity:0.4; pointer-events:none;
   }
   .search-results {
-    position: absolute; top: 100%; left: 0; right: 0;
-    background: var(--nj-card); border: 1px solid var(--nj-border);
-    border-top: none; border-radius: 0 0 var(--radius) var(--radius);
-    max-height: 200px; overflow-y: auto; z-index: 20;
-    display: none;
+    position:absolute; top:100%; left:0; right:0;
+    background:var(--nj-card); border:1px solid var(--nj-border);
+    border-top:none; border-radius:0 0 var(--radius) var(--radius);
+    max-height:200px; overflow-y:auto; z-index:1000; display:none;
   }
-  .search-results.open { display: block; }
+  .search-results.open { display:block; }
   .search-result-item {
-    padding: 8px 12px; font-size: 12px; font-weight: 500;
-    cursor: pointer; transition: background 0.1s;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    padding:8px 12px; font-size:12px; font-weight:500;
+    cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.04);
   }
-  .search-result-item:hover, .search-result-item.highlighted {
-    background: rgba(132,195,65,0.15); color: var(--nj-green);
+  .search-result-item:hover,.search-result-item.highlighted {
+    background:rgba(132,195,65,0.15); color:var(--nj-green);
   }
-  .search-result-item:last-child { border-bottom: none; }
-  .search-result-item mark {
-    background: none; color: var(--nj-green); font-weight: 700;
-  }
+  .search-result-item mark { background:none; color:var(--nj-green); font-weight:700; }
 
-  /* UPDATE BAR */
-  .update-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 5px 14px; font-size: 10px; color: var(--nj-gray); background: rgba(0,0,0,0.15);
+  /* FORECAST PANEL - above map */
+  .forecast-panel {
+    padding:0 14px;
+    transition:max-height 0.3s ease;
+    overflow:hidden;
   }
-  .update-bar button {
-    background: none; border: 1px solid var(--nj-border); color: var(--nj-gray);
-    font-family: inherit; font-size: 10px; padding: 2px 8px;
-    border-radius: 4px; cursor: pointer; transition: all 0.2s;
-  }
-  .update-bar button:hover { border-color: var(--nj-green); color: var(--nj-green); }
-
-  /* MAP */
-  .map-section {
-    position: relative; background: var(--nj-map-bg);
-    padding: 6px 0; overflow: hidden;
-  }
-  .map-wrapper {
-    position: relative; width: 100%; max-width: 340px; margin: 0 auto;
-  }
-  .map-wrapper svg { width: 100%; height: auto; display: block; }
-  .marker-bg {
-    fill: white; stroke: var(--nj-green); stroke-width: 1.5;
-    transition: fill 0.15s;
-  }
-  .marker-temp {
-    font-family: 'Libre Franklin', sans-serif; font-size: 12px; font-weight: 800;
-    fill: var(--nj-charcoal); text-anchor: middle; pointer-events: none;
-  }
-  .marker-label-text {
-    font-family: 'Libre Franklin', sans-serif; font-size: 7px; font-weight: 700;
-    fill: var(--nj-charcoal); text-anchor: middle; pointer-events: none;
-  }
-  .marker-pin {
-    fill: var(--nj-green); stroke: white; stroke-width: 1.5;
-  }
-
-  /* FORECAST PANEL */
-  .forecast-panel { padding: 0 14px 14px; }
+  .forecast-panel.collapsed { display:none; }
   .forecast-location-name {
-    font-size: 16px; font-weight: 800; padding: 12px 0 2px;
-    display: flex; align-items: center; gap: 6px;
+    font-size:15px; font-weight:800; padding:10px 0 2px;
+    display:flex; align-items:center; gap:6px;
   }
   .loc-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--nj-green); display: inline-block;
+    width:8px; height:8px; border-radius:50%;
+    background:var(--nj-green); display:inline-block;
   }
   .forecast-current {
-    font-size: 12px; color: var(--nj-gray);
-    margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--nj-border);
+    font-size:12px; color:var(--nj-gray);
+    margin-bottom:8px; padding-bottom:8px;
+    border-bottom:1px solid var(--nj-border);
   }
-  .forecast-days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .forecast-days { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding-bottom:10px; }
   .forecast-day-card {
-    background: var(--nj-card); border-radius: var(--radius);
-    padding: 10px 8px; text-align: center;
-    border: 1px solid var(--nj-border);
+    background:var(--nj-card); border-radius:var(--radius);
+    padding:10px 8px; text-align:center;
+    border:1px solid var(--nj-border);
   }
-  .forecast-day-card:first-child { border-color: var(--nj-green); }
+  .forecast-day-card:first-child { border-color:var(--nj-green); }
   .day-label {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.8px; color: var(--nj-gray); margin-bottom: 6px;
+    font-size:10px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.8px; color:var(--nj-gray); margin-bottom:6px;
   }
-  .forecast-day-card:first-child .day-label { color: var(--nj-green); }
-  .day-icon { font-size: 26px; margin-bottom: 4px; }
-  .day-temps {
-    display: flex; justify-content: center; align-items: baseline;
-    gap: 4px; margin-bottom: 4px;
-  }
-  .day-high { font-size: 20px; font-weight: 800; color: var(--nj-white); }
-  .day-low { font-size: 13px; font-weight: 600; color: var(--nj-gray); }
+  .forecast-day-card:first-child .day-label { color:var(--nj-green); }
+  .day-icon { font-size:26px; margin-bottom:4px; }
+  .day-temps { display:flex; justify-content:center; align-items:baseline; gap:4px; margin-bottom:4px; }
+  .day-high { font-size:20px; font-weight:800; color:var(--nj-white); }
+  .day-low { font-size:13px; font-weight:600; color:var(--nj-gray); }
   .day-desc {
-    font-size: 10px; color: var(--nj-gray); font-weight: 500; line-height: 1.3;
-    display: -webkit-box; -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical; overflow: hidden;
+    font-size:10px; color:var(--nj-gray); font-weight:500; line-height:1.3;
+    display:-webkit-box; -webkit-line-clamp:2;
+    -webkit-box-orient:vertical; overflow:hidden;
   }
-  .day-wind { font-size: 9px; color: #666E80; margin-top: 4px; font-weight: 500; }
-  .forecast-empty {
-    text-align: center; padding: 24px 14px;
-    color: var(--nj-gray); font-size: 13px;
+  .day-wind { font-size:9px; color:#666E80; margin-top:4px; font-weight:500; }
+
+  /* HOURLY SECTION */
+  .hourly-toggle {
+    display:flex; align-items:center; justify-content:center; gap:4px;
+    padding:6px 0 10px; cursor:pointer; font-size:11px; font-weight:600;
+    color:var(--nj-green); transition:opacity 0.2s;
   }
-  .forecast-empty .prompt-icon { font-size: 28px; margin-bottom: 6px; opacity: 0.5; }
+  .hourly-toggle:hover { opacity:0.8; }
+  .hourly-toggle .arrow { transition:transform 0.2s; display:inline-block; font-size:9px; }
+  .hourly-toggle.open .arrow { transform:rotate(180deg); }
+  .hourly-section { display:none; padding-bottom:10px; }
+  .hourly-section.open { display:block; }
+  .hourly-row {
+    display:flex; align-items:center; gap:6px;
+    padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+    font-size:11px;
+  }
+  .hourly-row:last-child { border-bottom:none; }
+  .hourly-time { min-width:58px; color:var(--nj-gray); font-weight:500; font-variant-numeric:tabular-nums; }
+  .hourly-emoji { min-width:20px; text-align:center; }
+  .hourly-temp { min-width:36px; font-weight:700; }
+  .hourly-desc { flex:1; color:var(--nj-gray); font-size:10px; }
+  .hourly-wind { color:#555; font-size:9px; min-width:64px; text-align:right; }
+
+  /* ERROR/RETRY */
+  .forecast-error {
+    padding:12px; text-align:center; font-size:12px; color:var(--nj-gray);
+  }
+  .forecast-error .retry-btn {
+    display:inline-block; margin-top:6px; padding:4px 14px;
+    background:var(--nj-green); color:var(--nj-charcoal); border:none;
+    border-radius:4px; font-family:inherit; font-size:11px; font-weight:700;
+    cursor:pointer;
+  }
   .loading-spinner {
-    display: inline-block; width: 14px; height: 14px;
-    border: 2px solid var(--nj-border); border-top-color: var(--nj-green);
-    border-radius: 50%; animation: spin 0.7s linear infinite;
+    display:inline-block; width:14px; height:14px;
+    border:2px solid var(--nj-border); border-top-color:var(--nj-green);
+    border-radius:50%; animation:spin 0.7s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-overlay {
-    position: absolute; inset: 0; background: rgba(202,218,232,0.65);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* MAP */
+  #map {
+    flex:1; min-height:580px; z-index:1;
   }
-  .loading-overlay.active { opacity: 1; pointer-events: auto; }
-  .loading-overlay .loading-spinner { width: 24px; height: 24px; border-width: 3px; }
+  .leaflet-container { background:#f2efe9 !important; }
+  /* County label styling */
+  .county-label {
+    font-family:'Libre Franklin',sans-serif !important;
+    font-size:8px !important; font-weight:600 !important;
+    color:#3D5A73 !important; text-transform:capitalize;
+    letter-spacing:0.3px;
+    background:none !important; border:none !important;
+    box-shadow:none !important; white-space:nowrap;
+    pointer-events:none !important;
+  }
+  /* Custom marker */
+  .town-marker {
+    background:var(--nj-green); border:2.5px solid white;
+    border-radius:50%; width:14px; height:14px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  /* FOOTER */
   .footer {
-    padding: 10px 14px; font-size: 9px; color: #555;
-    text-align: center; border-top: 1px solid var(--nj-border); line-height: 1.5;
+    padding:10px 14px; font-size:9px; color:#555;
+    text-align:center; border-top:1px solid var(--nj-border); line-height:1.5;
   }
-  .footer a { color: var(--nj-green); text-decoration: none; }
-  @media (max-width: 380px) {
-    .forecast-days { gap: 5px; }
-    .forecast-day-card { padding: 8px 5px; }
-    .day-high { font-size: 18px; }
-    .day-icon { font-size: 22px; }
+  .footer a { color:var(--nj-green); text-decoration:none; }
+  @media (max-width:380px) {
+    .forecast-days { gap:5px; }
+    .forecast-day-card { padding:8px 5px; }
+    .day-high { font-size:18px; }
+    .day-icon { font-size:22px; }
   }
 </style>
 </head>
@@ -243,7 +234,7 @@
       <img src="data:image/jpeg;base64,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" alt="NJ.com">
     </div>
     <div class="header-right">
-      <span class="header-weather-icon">🌤️</span>
+      <span style="font-size:16px">🌤️</span>
       <span class="header-title">N.J. weather</span>
       <span style="font-size:9px;color:rgba(255,255,255,0.5);font-weight:500;margin-left:4px;">Tap for 3-day forecast</span>
     </div>
@@ -266,117 +257,109 @@
     </div>
   </div>
 
-  <div class="update-bar">
-    <span id="updateTime">Search a town or tap the map</span>
-    <button onclick="refreshForecast()">↻ Refresh</button>
+  <!-- Forecast panel: between search and map -->
+  <div class="forecast-panel collapsed" id="forecastPanel">
+    <div class="forecast-location-name">
+      <span class="loc-dot"></span>
+      <span id="forecastLocName">--</span>
+    </div>
+    <div class="forecast-current" id="forecastCurrent">--</div>
+    <div class="forecast-days" id="forecastDays"></div>
+    <div class="hourly-toggle" id="hourlyToggle" onclick="toggleHourly()" style="display:none;">
+      Show hourly forecast <span class="arrow">▼</span>
+    </div>
+    <div class="hourly-section" id="hourlySection"></div>
   </div>
 
-  <div class="map-section">
-    <div class="loading-overlay" id="mapLoading"><div class="loading-spinner"></div></div>
-    <div class="map-wrapper">
-      <svg viewBox="0 0 340 560" xmlns="http://www.w3.org/2000/svg" id="njMap">
-        <rect width="340" height="560" fill="var(--nj-map-bg)" rx="6"/>
-        <path id="njOutline" d="M141.6,294.1L167.7,281.7L170.7,276.2L162.8,264.6L148.1,249.7L115.6,221.1L113.7,213.2L114.0,194.5L108.9,189.0L94.2,184.4L91.9,162.6L93.1,149.7L97.2,144.1L103.3,145.0L107.5,141.2L116.9,125.3L105.6,103.3L103.1,102.1L103.9,98.4L119.2,89.1L130.4,77.7L129.5,74.3L144.6,57.8L147.9,44.8L158.7,28.2L175.2,20.0L306.3,97.1L299.8,121.8L286.7,148.6L284.9,158.7L282.6,158.4L275.4,166.4L273.5,171.5L258.0,172.8L255.8,175.5L253.8,190.6L248.2,192.9L248.6,199.1L244.3,206.0L246.1,211.1L254.6,214.8L255.0,217.4L260.3,213.1L260.2,215.0L266.7,213.2L289.2,222.6L290.3,215.8L286.6,208.6L292.5,216.4L292.6,246.5L278.4,315.1L273.1,361.3L249.6,405.9L243.5,414.6L238.0,416.2L239.1,423.8L234.1,432.2L222.4,443.9L221.4,447.5L203.5,457.5L188.4,472.3L172.0,499.0L173.4,502.7L161.5,519.8L159.2,526.4L147.5,537.5L136.1,540.0L129.9,537.5L133.5,521.3L142.0,503.5L143.7,490.7L131.4,484.0L120.5,483.0L121.4,480.9L119.4,478.6L107.7,479.4L102.5,486.2L98.1,481.5L96.2,472.7L85.7,466.0L84.1,460.5L80.8,459.6L78.0,462.7L70.7,450.8L65.5,451.6L59.9,443.5L54.6,440.9L49.1,430.7L37.5,426.1L36.5,418.4L39.0,417.6L41.4,401.0L34.3,395.0L33.7,389.9L39.1,384.3L49.0,364.0L57.4,353.0L75.1,342.8L90.8,339.3L129.4,300.2L141.6,294.1Z"
-          fill="var(--nj-map-land)" stroke="#9AACBE" stroke-width="1.5" stroke-linejoin="round"/>
-        <!-- County boundaries -->
-        <path d="M178.6,377.3L181.0,381.7L181.8,390.5L184.3,391.4L185.1,390.2L186.0,391.9L187.3,390.5L194.6,396.5L198.3,396.6L200.6,401.6L202.9,402.8L204.7,401.8L208.2,405.7L213.2,405.6L214.3,407.5L215.9,405.0L216.0,407.7L217.3,408.8L217.2,406.1L220.6,405.4L226.6,418.0L238.3,417.0L239.5,420.0L235.0,431.1L220.5,448.4L209.3,453.5L200.5,460.6L196.1,460.7L192.6,458.3L187.3,462.1L184.0,461.3L181.9,462.9L179.6,461.0L178.7,462.8L178.2,461.0L174.5,462.8L171.2,460.8L161.5,460.7L160.6,458.9L153.9,459.3L148.1,456.4L147.4,452.2L149.5,443.6L148.8,433.9L127.7,414.4L168.4,368.5L178.6,377.3Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M304.9,97.1L300.8,114.6L291.5,138.1L290.0,139.1L286.2,134.3L283.1,137.6L279.0,138.1L274.3,143.7L274.2,147.6L272.4,144.5L268.1,145.5L264.8,142.2L266.5,135.6L268.9,134.0L269.1,126.9L271.4,126.7L267.6,121.0L267.8,113.6L266.0,112.7L264.7,108.9L265.9,103.7L261.1,100.0L260.9,101.4L252.2,100.5L248.3,98.2L244.4,92.7L254.4,67.9L304.9,97.1Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M172.6,272.0L178.6,273.4L178.1,275.1L186.9,278.7L187.2,280.4L192.7,281.0L225.2,359.1L225.0,397.1L223.3,402.2L220.4,402.9L221.1,404.5L219.3,406.2L217.2,406.2L217.7,408.8L216.0,407.7L215.9,405.0L214.3,407.5L213.2,405.6L208.2,405.7L204.7,401.8L202.9,402.8L200.6,401.6L198.3,396.6L194.6,396.5L187.3,390.5L186.0,391.9L185.1,390.2L184.3,391.4L181.8,390.5L179.6,378.3L162.5,364.0L156.9,357.0L150.9,355.6L142.5,357.0L141.2,355.3L136.6,335.0L133.5,332.4L131.4,327.7L127.9,326.3L129.2,323.5L122.8,322.0L122.0,317.4L123.6,314.9L122.2,312.8L119.3,311.4L115.4,312.5L117.3,308.6L123.0,306.4L134.4,297.0L148.0,292.7L151.9,288.9L154.3,283.4L160.4,284.7L167.7,281.7L172.1,277.9L173.7,274.6L172.6,274.8L172.6,272.0Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M119.9,311.7L123.6,314.9L122.0,317.4L122.9,322.2L129.2,323.5L127.9,326.3L131.4,327.7L133.5,332.4L136.6,335.0L141.2,355.3L142.5,357.0L154.8,356.0L168.4,368.5L145.4,394.5L141.2,389.4L140.2,382.3L136.6,376.8L127.3,373.4L121.3,368.3L121.8,365.1L118.0,361.6L116.3,357.2L114.9,356.4L113.1,359.0L111.0,357.8L111.9,355.3L113.7,354.8L110.8,350.4L111.6,344.3L108.1,340.0L106.5,340.6L102.6,334.7L104.1,330.2L102.9,324.8L103.9,319.4L113.2,315.1L115.4,312.5L119.9,311.7Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M147.4,455.2L153.9,459.3L160.6,458.9L161.5,460.7L171.2,460.8L174.5,462.8L178.2,461.0L178.7,462.8L179.6,461.0L181.9,462.9L184.0,461.3L187.3,462.1L192.6,458.3L196.1,460.7L200.5,460.6L188.8,472.0L179.0,486.2L171.9,499.9L173.8,501.8L163.3,516.6L158.7,526.6L148.7,535.7L147.9,538.3L146.3,536.7L138.7,539.8L131.4,539.4L129.8,537.4L132.3,525.3L141.5,505.3L144.0,493.7L143.8,490.4L139.6,486.5L139.4,484.4L138.0,484.3L137.4,477.8L142.2,474.4L144.6,458.7L147.4,455.2Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M115.2,402.9L148.8,433.9L149.5,443.6L147.4,452.2L148.0,455.4L144.6,458.7L142.2,474.4L137.4,477.8L137.4,482.5L139.4,484.4L139.0,486.8L137.2,484.7L121.1,483.3L121.3,479.3L117.2,478.5L106.3,479.3L104.4,483.9L102.8,485.9L98.0,481.0L98.8,478.6L96.9,473.5L93.9,472.1L91.9,468.6L85.7,465.9L83.4,460.2L80.7,459.6L77.7,462.2L73.9,458.3L71.5,451.4L67.9,449.8L66.0,451.7L64.8,449.3L61.2,447.6L60.3,443.7L57.0,441.6L59.0,437.7L56.6,436.5L58.5,433.9L56.8,432.1L58.3,431.1L57.1,430.7L58.3,429.9L57.5,427.6L59.8,425.7L65.0,427.0L69.2,419.7L73.2,419.4L86.3,405.0L111.6,426.7L113.3,420.8L112.2,417.4L113.1,408.1L115.2,402.9Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M234.2,116.8L244.8,118.7L246.4,121.4L256.7,126.6L267.7,135.1L266.5,135.6L266.3,139.7L261.8,150.7L263.1,153.5L269.7,152.3L270.2,160.6L267.3,166.4L261.9,162.9L255.9,163.6L252.6,159.2L242.2,156.0L239.3,157.9L235.7,157.1L228.1,152.3L230.4,149.0L227.2,147.6L228.3,147.0L228.9,140.8L234.1,135.7L235.7,130.1L234.9,128.9L237.0,125.7L233.8,125.1L233.2,122.2L234.2,116.8Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M102.6,334.7L105.3,339.2L108.1,340.0L111.6,344.3L110.8,350.4L113.7,354.8L111.9,355.3L111.0,357.8L113.1,359.0L114.9,356.4L116.3,357.2L118.0,361.6L121.8,365.1L121.3,368.3L127.3,373.4L136.6,376.8L140.2,382.3L141.2,389.4L145.4,394.5L127.7,414.4L92.6,381.9L86.8,383.1L84.8,382.4L83.8,379.3L71.9,377.0L70.3,374.0L63.6,369.2L63.6,365.2L61.0,364.0L61.5,361.9L58.8,361.3L60.6,359.0L58.6,356.1L55.1,356.9L59.1,354.4L57.5,353.1L69.2,343.8L82.9,342.5L95.1,336.1L102.6,334.7Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M262.5,172.7L262.9,172.6L263.1,172.8L262.5,172.7Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M282.4,160.6L282.8,160.9L282.7,161.1L282.5,161.1L282.2,160.8L282.1,161.5L281.8,161.2L282.4,160.6Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M286.4,134.4L290.2,139.9L285.8,148.3L284.5,148.5L285.6,149.3L283.8,154.2L284.6,154.7L283.3,155.1L284.0,157.2L282.5,158.4L283.2,159.5L280.0,162.8L277.8,161.4L277.4,164.2L276.5,163.2L275.8,163.1L277.4,165.2L275.6,165.8L278.1,168.0L273.2,166.2L277.4,169.2L271.5,167.1L274.3,168.3L274.7,170.6L262.3,172.3L265.9,169.0L270.2,160.5L269.5,152.1L263.2,153.5L261.8,151.2L264.8,142.2L268.1,145.5L272.4,144.5L274.2,147.6L274.2,144.0L276.4,140.3L279.1,138.1L283.1,137.6L286.4,134.4Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M143.3,142.0L154.1,151.7L162.7,153.0L170.4,156.6L171.8,160.7L170.5,163.3L171.5,164.2L170.7,167.1L169.3,168.1L171.2,170.5L169.8,174.4L173.9,177.6L170.8,182.0L170.3,184.6L172.2,185.6L161.9,202.8L158.4,200.2L166.5,219.8L156.6,221.4L157.7,228.2L146.6,229.7L148.8,236.4L136.4,237.9L134.5,237.3L130.6,225.3L125.9,222.7L120.7,224.1L115.4,220.6L113.7,212.9L115.1,206.1L114.0,194.5L106.2,187.9L102.4,187.4L97.0,189.7L93.3,186.3L101.4,176.0L107.5,173.7L121.6,162.4L124.6,162.2L128.6,158.4L130.4,158.5L141.2,145.4L141.0,143.4L143.3,142.0Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M170.8,230.3L181.9,226.9L187.1,228.3L187.9,229.8L185.7,237.8L187.1,241.1L193.1,243.5L197.8,248.2L202.5,247.6L203.4,249.5L210.1,252.0L209.2,256.4L210.1,258.6L200.0,264.2L195.4,270.9L188.4,271.6L192.7,281.0L187.2,280.4L186.9,278.7L178.1,275.1L178.6,273.4L174.3,271.3L172.6,272.0L172.6,274.8L173.7,274.7L170.9,278.5L170.5,275.6L165.3,270.7L162.7,264.6L151.5,257.5L146.3,246.7L134.6,237.5L148.8,236.4L146.6,229.7L157.7,228.2L156.6,221.4L166.5,219.8L170.8,230.3Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M290.0,220.1L290.0,220.2L289.9,221.0L289.7,220.6L290.0,220.1Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M289.1,208.7L291.8,214.9L293.4,239.3L283.8,289.0L281.0,287.8L277.0,291.5L273.9,288.3L273.3,283.1L271.3,281.3L264.3,289.4L259.7,286.9L251.2,287.1L249.0,285.7L249.4,282.6L246.4,278.7L246.1,274.8L222.4,273.7L198.4,293.7L188.4,271.6L195.4,270.9L200.0,264.2L210.1,258.6L209.2,256.4L213.4,256.8L224.5,250.8L224.4,248.9L227.1,245.2L248.4,223.6L248.4,218.3L251.9,215.4L252.2,213.5L256.1,216.6L259.5,212.4L263.0,214.9L266.9,212.8L279.9,220.4L291.3,224.0L292.1,222.3L289.8,218.6L290.1,215.4L288.4,214.6L287.7,210.6L285.7,209.2L289.1,208.7Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M246.2,274.9L246.4,278.7L249.4,282.6L249.0,285.5L251.0,287.1L259.7,286.9L264.3,289.4L271.3,281.3L273.3,283.1L273.9,288.3L277.0,291.5L281.0,287.8L283.8,289.0L276.3,330.0L273.8,362.6L270.5,365.9L250.4,404.6L239.5,420.0L238.3,417.0L226.6,418.0L220.7,406.8L220.4,403.0L223.3,402.2L225.0,397.1L225.2,359.1L198.4,293.7L222.4,273.7L246.2,274.9Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M254.4,67.9L244.4,92.7L248.3,98.2L252.2,100.5L260.9,101.4L261.1,100.0L265.9,103.7L264.7,108.9L266.0,112.7L267.8,113.6L267.6,121.0L271.4,126.1L271.0,127.5L269.1,127.0L268.2,134.9L245.7,120.8L244.3,118.2L245.2,115.7L241.7,112.6L243.5,102.2L240.2,100.8L241.0,99.1L240.0,95.9L238.3,96.9L233.8,94.9L231.6,95.7L230.8,93.5L225.5,94.0L220.4,90.4L217.7,92.2L219.1,88.8L215.8,84.9L207.5,89.2L206.8,88.2L209.3,80.2L206.6,78.1L228.8,53.0L254.4,67.9Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M58.7,356.6L60.6,359.0L58.8,361.3L61.5,361.9L61.0,364.0L63.6,365.2L63.6,369.2L70.3,374.0L71.9,377.0L83.8,379.3L84.8,382.4L86.8,383.1L92.6,381.9L115.2,402.9L113.1,408.1L112.2,417.4L113.3,420.8L112.1,426.2L86.3,405.0L73.2,419.4L69.2,419.7L65.0,427.0L59.8,425.7L57.5,427.7L58.3,429.9L57.1,430.7L58.3,431.1L56.8,432.1L58.5,433.9L56.6,436.5L59.0,437.7L56.9,441.5L58.7,443.1L54.9,441.3L49.3,430.7L47.3,431.0L41.9,426.3L37.5,426.1L36.5,418.4L37.5,419.9L39.1,419.2L39.2,411.0L38.0,408.9L41.5,403.2L41.4,401.0L34.7,395.9L33.8,389.8L40.9,382.0L42.4,375.4L45.3,371.7L47.3,371.4L47.4,367.6L50.0,361.2L53.9,357.5L58.7,356.6Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M198.2,148.6L199.0,153.5L202.0,154.4L202.8,158.7L204.8,160.5L204.4,163.0L202.5,164.1L202.9,167.1L201.5,167.8L203.3,171.6L213.5,166.4L215.1,170.6L218.1,168.3L220.2,169.8L223.2,168.3L219.0,178.5L204.5,186.2L202.9,188.9L204.8,194.5L210.1,201.0L212.5,201.7L213.7,205.5L210.0,207.5L201.2,216.8L193.2,221.1L192.7,226.2L188.7,230.1L181.9,226.9L170.8,230.3L158.4,200.2L161.9,202.8L172.2,185.5L170.3,184.6L170.8,182.0L173.9,177.6L169.8,174.4L171.2,170.5L169.3,168.1L170.7,167.1L171.5,164.2L170.5,163.3L171.8,160.7L170.2,156.6L198.2,148.6Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M175.1,20.0L228.8,53.0L185.5,102.2L183.9,104.6L184.8,108.8L182.0,111.6L182.1,113.3L172.5,118.1L169.1,113.5L163.0,115.6L130.5,76.0L126.6,77.1L128.5,72.9L137.9,66.9L144.5,57.8L148.3,49.7L146.9,47.7L147.9,44.5L150.3,42.4L153.2,34.9L159.3,29.9L159.1,27.5L163.4,26.3L165.7,22.3L170.2,22.4L175.1,20.0Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M228.1,152.3L235.7,157.1L239.3,157.9L242.2,156.0L252.6,159.2L255.9,163.6L261.9,162.9L267.3,166.4L262.3,172.3L259.1,172.0L256.2,174.2L255.0,177.1L255.4,183.5L253.8,181.3L241.3,183.9L239.0,182.0L239.4,180.3L213.9,183.3L213.1,182.3L220.6,176.2L223.2,168.4L220.2,169.8L218.1,168.3L215.1,170.6L213.5,166.4L223.1,156.9L225.0,156.8L228.1,152.3Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M130.7,76.3L163.0,115.6L157.0,121.4L157.5,126.1L154.5,128.7L155.0,131.5L151.1,136.8L140.9,143.4L141.2,145.4L130.4,158.5L128.6,158.4L124.6,162.2L121.6,162.4L107.5,173.7L101.4,176.0L94.2,183.9L92.2,178.6L94.4,177.1L92.5,171.8L96.3,166.1L91.9,162.9L95.5,154.2L93.1,149.7L96.1,147.4L97.2,144.1L103.2,145.0L107.5,141.3L111.6,134.0L109.5,129.4L114.6,129.1L117.0,125.2L112.9,119.2L112.4,115.1L106.0,106.5L105.6,103.2L103.1,102.4L103.8,98.6L120.9,88.0L123.2,82.1L130.1,78.2L130.7,76.3Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M207.0,78.1L209.3,80.2L206.8,87.5L207.5,89.2L215.8,84.9L219.1,88.8L217.7,92.2L220.4,90.4L225.5,94.0L230.8,93.5L231.6,95.7L233.8,94.9L238.3,96.9L240.0,95.9L241.0,99.1L240.2,100.8L243.5,102.2L243.2,108.8L241.6,111.9L245.3,116.3L244.4,115.9L244.4,118.5L242.4,119.0L242.8,117.8L241.0,116.7L234.2,116.8L233.7,125.0L237.0,125.7L234.9,128.9L235.7,130.1L234.1,135.7L228.9,140.8L228.3,147.0L227.2,147.6L230.4,149.1L225.0,156.8L223.1,156.9L215.0,163.8L214.6,166.3L204.1,171.8L201.5,167.8L202.9,167.1L202.5,164.1L204.4,163.0L204.8,160.5L202.8,158.7L202.0,154.4L199.0,153.5L197.9,148.3L169.0,156.4L162.7,153.0L154.1,151.7L143.3,142.0L149.7,138.5L155.0,131.5L154.5,128.8L157.7,125.7L156.8,121.8L161.4,116.6L169.1,113.5L172.5,118.1L182.0,113.4L182.0,111.6L184.8,108.8L183.9,104.6L185.5,102.2L207.0,78.1Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <path d="M240.6,183.2L253.8,181.3L255.4,183.5L253.3,190.5L251.0,190.1L247.3,192.8L248.0,198.6L244.7,206.8L246.1,211.1L252.4,214.3L248.4,218.3L248.4,223.6L227.1,245.2L224.4,248.9L224.5,250.8L213.4,256.8L209.6,256.4L210.1,252.0L203.4,249.5L202.5,247.6L197.8,248.2L193.1,243.5L187.1,241.1L185.7,237.8L186.7,232.5L192.6,226.4L193.1,221.1L201.2,216.8L210.0,207.5L213.7,205.5L212.5,201.7L210.1,201.0L202.7,190.8L204.4,186.2L212.6,182.3L239.4,180.3L239.0,182.0L240.6,183.2Z" fill="none" stroke="#9AACBE" stroke-width="0.7" stroke-linejoin="round" opacity="0.6"/>
-        <text x="180.8" y="422.4" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">ATLANTIC</text>
-        <text x="276.2" y="104.8" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">BERGEN</text>
-        <text x="179.6" y="336.8" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">BURLINGTON</text>
-        <text x="131.8" y="352.7" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">CAMDEN</text>
-        <text x="158.0" y="492.8" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">CAPE MAY</text>
-        <text x="107.2" y="444.7" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">CUMBERLAND</text>
-        <text x="248.5" y="142.1" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">ESSEX</text>
-        <text x="102.2" y="371.2" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">GLOUCESTER</text>
-        <text x="275.8" y="152.6" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">HUDSON</text>
-        <text x="139.6" y="189.2" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">HUNTERDON</text>
-        <text x="174.1" y="249.9" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">MERCER</text>
-        <text x="252.6" y="254.9" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">MONMOUTH</text>
-        <text x="242.9" y="335.3" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">OCEAN</text>
-        <text x="239.7" y="89.2" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">PASSAIC</text>
-        <text x="68.2" y="398.9" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">SALEM</text>
-        <text x="188.1" y="190.0" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">SOMERSET</text>
-        <text x="175.9" y="66.7" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">SUSSEX</text>
-        <text x="238.5" y="169.3" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">UNION</text>
-        <text x="125.7" y="127.1" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">WARREN</text>
-        <text x="199.8" y="126.1" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">MORRIS</text>
-        <text x="221.5" y="216.6" font-family="Libre Franklin, sans-serif" font-size="6.5" font-weight="600" fill="#6B7D92" text-anchor="middle" opacity="0.7">MIDDLESEX</text>
-
-        <!-- Dynamic marker group -->
-        <g id="markerGroup"></g>
-      </svg>
-    </div>
-  </div>
-
-  <div class="forecast-panel" id="forecastPanel">
-    <div class="forecast-empty" id="forecastEmpty">
-      <div class="prompt-icon">📍</div>
-      Search for any N.J. municipality above
-    </div>
-    <div id="forecastContent" style="display:none;">
-      <div class="forecast-location-name">
-        <span class="loc-dot"></span>
-        <span id="forecastLocName">--</span>
-      </div>
-      <div class="forecast-current" id="forecastCurrent">--</div>
-      <div class="forecast-days" id="forecastDays"></div>
-    </div>
-  </div>
+  <div id="map"></div>
 
   <div class="footer">
-    Data: <a href="https://weather.gov" target="_blank">National Weather Service</a> / NOAA<br>
+    Data: <a href="https://weather.gov" target="_blank">National Weather Service</a> / NOAA &nbsp;|&nbsp; Map: OpenStreetMap contributors<br>
     &copy; NJ Advance Media / NJ.com
   </div>
 </div>
 
 <script>
-// Projection constants (same as Python)
-const PROJ = {"min_lon": -75.559446, "max_lon": -73.893979, "min_lat": 38.928519, "max_lat": 41.357423, "cos_lat": 0.7644381024986509, "scale": 214.08832955110654, "off_x": 33.71710341533861, "off_y": 20.0};
+// ── DATA ──
+const TOWNS = [{"name":"Absecon","lat":39.4285,"lon":-74.4951},{"name":"Atlantic City","lat":39.3643,"lon":-74.4229},{"name":"Brigantine","lat":39.4101,"lon":-74.3646},{"name":"Buena","lat":39.5124,"lon":-74.9271},{"name":"Buena Vista Twp","lat":39.5279,"lon":-74.9668},{"name":"Corbin City","lat":39.3085,"lon":-74.7868},{"name":"Egg Harbor City","lat":39.5288,"lon":-74.6477},{"name":"Egg Harbor Twp","lat":39.3838,"lon":-74.6113},{"name":"Estell Manor","lat":39.4118,"lon":-74.836},{"name":"Folsom","lat":39.601,"lon":-74.8464},{"name":"Galloway Twp","lat":39.4927,"lon":-74.4835},{"name":"Hamilton Twp","lat":39.4468,"lon":-74.6683},{"name":"Hammonton","lat":39.6366,"lon":-74.8021},{"name":"Linwood","lat":39.3396,"lon":-74.5751},{"name":"Longport","lat":39.318,"lon":-74.5328},{"name":"Margate City","lat":39.328,"lon":-74.5093},{"name":"Mullica Twp","lat":39.581,"lon":-74.638},{"name":"Northfield","lat":39.3703,"lon":-74.5503},{"name":"Pleasantville","lat":39.3896,"lon":-74.524},{"name":"Port Republic","lat":39.5204,"lon":-74.4861},{"name":"Somers Point","lat":39.3176,"lon":-74.5947},{"name":"Ventnor City","lat":39.3393,"lon":-74.4832},{"name":"Weymouth Twp","lat":39.4872,"lon":-74.826},{"name":"Bergenfield","lat":40.9276,"lon":-74.0001},{"name":"Bogota","lat":40.8762,"lon":-74.0299},{"name":"Cliffside Park","lat":40.8215,"lon":-73.9876},{"name":"Closter","lat":40.9732,"lon":-73.9615},{"name":"East Rutherford","lat":40.834,"lon":-74.0968},{"name":"Edgewater","lat":40.8271,"lon":-73.9754},{"name":"Elmwood Park","lat":40.904,"lon":-74.1204},{"name":"Englewood","lat":40.8929,"lon":-73.9726},{"name":"Fair Lawn","lat":40.9404,"lon":-74.1318},{"name":"Fort Lee","lat":40.851,"lon":-73.9712},{"name":"Garfield","lat":40.8815,"lon":-74.1132},{"name":"Glen Rock","lat":40.959,"lon":-74.1318},{"name":"Hackensack","lat":40.8859,"lon":-74.0435},{"name":"Hasbrouck Heights","lat":40.8623,"lon":-74.0776},{"name":"Hawthorne","lat":40.9493,"lon":-74.1537},{"name":"Ho-Ho-Kus","lat":41.0001,"lon":-74.1007},{"name":"Leonia","lat":40.8612,"lon":-73.9887},{"name":"Lodi","lat":40.8823,"lon":-74.0832},{"name":"Lyndhurst","lat":40.8121,"lon":-74.1243},{"name":"Mahwah","lat":41.0887,"lon":-74.1438},{"name":"Maywood","lat":40.9026,"lon":-74.0621},{"name":"Moonachie","lat":40.8393,"lon":-74.0493},{"name":"New Milford","lat":40.9351,"lon":-74.019},{"name":"North Arlington","lat":40.7884,"lon":-74.1332},{"name":"Oradell","lat":40.9576,"lon":-74.0368},{"name":"Palisades Park","lat":40.8479,"lon":-73.9971},{"name":"Paramus","lat":40.9445,"lon":-74.0701},{"name":"Park Ridge","lat":41.0373,"lon":-74.0401},{"name":"Ramsey","lat":41.0573,"lon":-74.1415},{"name":"Ridgefield","lat":40.834,"lon":-74.0087},{"name":"Ridgefield Park","lat":40.8576,"lon":-74.0215},{"name":"Ridgewood","lat":40.9793,"lon":-74.1168},{"name":"River Edge","lat":40.9273,"lon":-74.0387},{"name":"Rochelle Park","lat":40.9076,"lon":-74.0749},{"name":"Rutherford","lat":40.8265,"lon":-74.1068},{"name":"Saddle Brook","lat":40.8998,"lon":-74.0926},{"name":"Teaneck","lat":40.8976,"lon":-74.0126},{"name":"Tenafly","lat":40.9254,"lon":-73.9626},{"name":"Waldwick","lat":41.0115,"lon":-74.1168},{"name":"Westwood","lat":41.0012,"lon":-74.0318},{"name":"Woodcliff Lake","lat":41.0251,"lon":-74.0668},{"name":"Wyckoff","lat":40.9987,"lon":-74.1668},{"name":"Beverly","lat":40.066,"lon":-74.919},{"name":"Bordentown","lat":40.1465,"lon":-74.7118},{"name":"Burlington City","lat":40.0712,"lon":-74.8546},{"name":"Cinnaminson","lat":39.9963,"lon":-74.9927},{"name":"Delran","lat":40.0163,"lon":-74.9527},{"name":"Eastampton","lat":39.9854,"lon":-74.739},{"name":"Evesham Twp","lat":39.8586,"lon":-74.859},{"name":"Florence Twp","lat":40.1263,"lon":-74.8027},{"name":"Lumberton Twp","lat":39.9586,"lon":-74.809},{"name":"Maple Shade","lat":39.9527,"lon":-74.9927},{"name":"Medford","lat":39.8586,"lon":-74.8227},{"name":"Moorestown","lat":39.9686,"lon":-74.949},{"name":"Mount Holly","lat":39.9926,"lon":-74.7877},{"name":"Mount Laurel","lat":39.9386,"lon":-74.8927},{"name":"Palmyra","lat":40.0063,"lon":-75.029},{"name":"Pemberton Twp","lat":39.9586,"lon":-74.6827},{"name":"Riverside","lat":40.0326,"lon":-74.9527},{"name":"Riverton","lat":40.0126,"lon":-75.0127},{"name":"Shamong Twp","lat":39.7886,"lon":-74.7227},{"name":"Southampton Twp","lat":39.9254,"lon":-74.709},{"name":"Tabernacle Twp","lat":39.7786,"lon":-74.709},{"name":"Westampton","lat":40.0163,"lon":-74.819},{"name":"Willingboro","lat":40.0263,"lon":-74.869},{"name":"Woodland Twp","lat":39.8286,"lon":-74.5227},{"name":"Audubon","lat":39.891,"lon":-75.0731},{"name":"Barrington","lat":39.8651,"lon":-75.0554},{"name":"Bellmawr","lat":39.8676,"lon":-75.0951},{"name":"Berlin","lat":39.7912,"lon":-74.929},{"name":"Camden","lat":39.9259,"lon":-75.1196},{"name":"Cherry Hill","lat":39.9018,"lon":-74.9812},{"name":"Clementon","lat":39.8115,"lon":-74.9823},{"name":"Collingswood","lat":39.9176,"lon":-75.0712},{"name":"Gibbsboro","lat":39.8376,"lon":-74.9612},{"name":"Gloucester City","lat":39.8912,"lon":-75.1162},{"name":"Gloucester Twp","lat":39.8012,"lon":-74.959},{"name":"Haddon Heights","lat":39.8776,"lon":-75.0651},{"name":"Haddon Twp","lat":39.8976,"lon":-75.0612},{"name":"Haddonfield","lat":39.8926,"lon":-75.0351},{"name":"Lindenwold","lat":39.8212,"lon":-74.9912},{"name":"Merchantville","lat":39.9476,"lon":-75.0612},{"name":"Pennsauken","lat":39.9663,"lon":-75.058},{"name":"Pine Hill","lat":39.7812,"lon":-74.989},{"name":"Runnemede","lat":39.8526,"lon":-75.0712},{"name":"Somerdale","lat":39.8412,"lon":-75.0212},{"name":"Stratford","lat":39.8276,"lon":-75.0151},{"name":"Voorhees","lat":39.8486,"lon":-74.9527},{"name":"Waterford Twp","lat":39.7412,"lon":-74.849},{"name":"Winslow Twp","lat":39.7012,"lon":-74.869},{"name":"Avalon","lat":39.1015,"lon":-74.7176},{"name":"Cape May","lat":38.9351,"lon":-74.906},{"name":"Cape May Court House","lat":39.0851,"lon":-74.826},{"name":"Dennis Twp","lat":39.1851,"lon":-74.846},{"name":"Lower Twp","lat":38.9651,"lon":-74.886},{"name":"Middle Twp","lat":39.0451,"lon":-74.866},{"name":"North Wildwood","lat":38.9978,"lon":-74.7893},{"name":"Ocean City","lat":39.2776,"lon":-74.5751},{"name":"Sea Isle City","lat":39.1536,"lon":-74.6932},{"name":"Stone Harbor","lat":39.0578,"lon":-74.7593},{"name":"Upper Twp","lat":39.2051,"lon":-74.746},{"name":"West Cape May","lat":38.9401,"lon":-74.936},{"name":"West Wildwood","lat":38.9878,"lon":-74.8193},{"name":"Wildwood","lat":38.9918,"lon":-74.8148},{"name":"Wildwood Crest","lat":38.9728,"lon":-74.8248},{"name":"Woodbine","lat":39.2415,"lon":-74.8168},{"name":"Bridgeton","lat":39.4271,"lon":-75.234},{"name":"Commercial Twp","lat":39.3571,"lon":-75.174},{"name":"Deerfield Twp","lat":39.4871,"lon":-75.164},{"name":"Downe Twp","lat":39.2771,"lon":-75.134},{"name":"Fairfield Twp","lat":39.3771,"lon":-75.264},{"name":"Greenwich Twp","lat":39.3971,"lon":-75.334},{"name":"Hopewell Twp","lat":39.4571,"lon":-75.164},{"name":"Lawrence Twp","lat":39.3571,"lon":-75.084},{"name":"Millville","lat":39.4021,"lon":-75.0393},{"name":"Stow Creek Twp","lat":39.4271,"lon":-75.354},{"name":"Upper Deerfield Twp","lat":39.5071,"lon":-75.214},{"name":"Vineland","lat":39.4863,"lon":-75.026},{"name":"Belleville","lat":40.7934,"lon":-74.1504},{"name":"Bloomfield","lat":40.8068,"lon":-74.1857},{"name":"Caldwell","lat":40.8398,"lon":-74.2768},{"name":"Cedar Grove","lat":40.8576,"lon":-74.2279},{"name":"East Orange","lat":40.7676,"lon":-74.2098},{"name":"Essex Fells","lat":40.8276,"lon":-74.2768},{"name":"Fairfield Twp","lat":40.8827,"lon":-74.3043},{"name":"Glen Ridge","lat":40.8034,"lon":-74.2037},{"name":"Irvington","lat":40.7326,"lon":-74.2348},{"name":"Livingston","lat":40.7926,"lon":-74.3098},{"name":"Maplewood","lat":40.7326,"lon":-74.2704},{"name":"Millburn","lat":40.7276,"lon":-74.3068},{"name":"Montclair","lat":40.8259,"lon":-74.209},{"name":"Newark","lat":40.7357,"lon":-74.1724},{"name":"North Caldwell","lat":40.8648,"lon":-74.2668},{"name":"Nutley","lat":40.8221,"lon":-74.159},{"name":"Orange","lat":40.7701,"lon":-74.2326},{"name":"Roseland","lat":40.8226,"lon":-74.3068},{"name":"South Orange","lat":40.7476,"lon":-74.2618},{"name":"Verona","lat":40.8298,"lon":-74.2418},{"name":"West Caldwell","lat":40.8498,"lon":-74.2968},{"name":"West Orange","lat":40.7987,"lon":-74.2618},{"name":"Clayton","lat":39.661,"lon":-75.089},{"name":"Deptford Twp","lat":39.8312,"lon":-75.119},{"name":"East Greenwich Twp","lat":39.7912,"lon":-75.179},{"name":"Elk Twp","lat":39.6612,"lon":-75.179},{"name":"Franklin Twp","lat":39.5912,"lon":-75.119},{"name":"Glassboro","lat":39.7029,"lon":-75.1118},{"name":"Greenwich Twp","lat":39.8012,"lon":-75.159},{"name":"Harrison Twp","lat":39.7412,"lon":-75.149},{"name":"Logan Twp","lat":39.8012,"lon":-75.289},{"name":"Mantua Twp","lat":39.7812,"lon":-75.179},{"name":"Monroe Twp","lat":39.6612,"lon":-74.989},{"name":"National Park","lat":39.8612,"lon":-75.179},{"name":"Paulsboro","lat":39.8412,"lon":-75.249},{"name":"Pitman","lat":39.7329,"lon":-75.1318},{"name":"South Harrison Twp","lat":39.6812,"lon":-75.229},{"name":"Swedesboro","lat":39.7412,"lon":-75.309},{"name":"Washington Twp","lat":39.7512,"lon":-75.069},{"name":"Wenonah","lat":39.7926,"lon":-75.149},{"name":"West Deptford Twp","lat":39.8412,"lon":-75.199},{"name":"Westville","lat":39.8676,"lon":-75.1312},{"name":"Woodbury","lat":39.8376,"lon":-75.1526},{"name":"Woodbury Heights","lat":39.8176,"lon":-75.1526},{"name":"Bayonne","lat":40.6687,"lon":-74.1143},{"name":"East Newark","lat":40.7487,"lon":-74.1604},{"name":"Guttenberg","lat":40.7915,"lon":-74.004},{"name":"Harrison","lat":40.7437,"lon":-74.1543},{"name":"Hoboken","lat":40.744,"lon":-74.0324},{"name":"Jersey City","lat":40.7282,"lon":-74.0776},{"name":"Kearny","lat":40.7643,"lon":-74.1457},{"name":"North Bergen","lat":40.804,"lon":-74.0118},{"name":"Secaucus","lat":40.7893,"lon":-74.0568},{"name":"Union City","lat":40.7676,"lon":-74.0243},{"name":"Weehawken","lat":40.7676,"lon":-74.017},{"name":"West New York","lat":40.789,"lon":-74.0126},{"name":"Califon","lat":40.7193,"lon":-74.8368},{"name":"Clinton","lat":40.6368,"lon":-74.9096},{"name":"Flemington","lat":40.5126,"lon":-74.8593},{"name":"Frenchtown","lat":40.5263,"lon":-75.0527},{"name":"Hampton","lat":40.7063,"lon":-74.9527},{"name":"High Bridge","lat":40.6663,"lon":-74.8927},{"name":"Lambertville","lat":40.3663,"lon":-74.9427},{"name":"Lebanon Twp","lat":40.7063,"lon":-74.8627},{"name":"Milford","lat":40.5663,"lon":-75.0827},{"name":"Raritan Twp","lat":40.5163,"lon":-74.8327},{"name":"Readington Twp","lat":40.5663,"lon":-74.7427},{"name":"Tewksbury Twp","lat":40.6963,"lon":-74.7827},{"name":"West Amwell Twp","lat":40.3963,"lon":-74.9827},{"name":"East Windsor","lat":40.2663,"lon":-74.5327},{"name":"Ewing Twp","lat":40.2663,"lon":-74.8027},{"name":"Hamilton Twp","lat":40.2263,"lon":-74.6727},{"name":"Hightstown","lat":40.2668,"lon":-74.5232},{"name":"Hopewell","lat":40.3863,"lon":-74.7627},{"name":"Lawrence Twp","lat":40.2963,"lon":-74.7327},{"name":"Pennington","lat":40.3263,"lon":-74.7927},{"name":"Princeton","lat":40.3573,"lon":-74.6596},{"name":"Robbinsville","lat":40.2163,"lon":-74.6127},{"name":"Trenton","lat":40.2206,"lon":-74.7699},{"name":"West Windsor","lat":40.2963,"lon":-74.6027},{"name":"Carteret","lat":40.5768,"lon":-74.2279},{"name":"Cranbury","lat":40.3163,"lon":-74.5127},{"name":"Dunellen","lat":40.5893,"lon":-74.4718},{"name":"East Brunswick","lat":40.4286,"lon":-74.419},{"name":"Edison","lat":40.5187,"lon":-74.3518},{"name":"Highland Park","lat":40.4987,"lon":-74.4268},{"name":"Jamesburg","lat":40.3563,"lon":-74.4327},{"name":"Metuchen","lat":40.5437,"lon":-74.3618},{"name":"Middlesex","lat":40.5737,"lon":-74.5018},{"name":"Monroe Twp","lat":40.3263,"lon":-74.4327},{"name":"New Brunswick","lat":40.4862,"lon":-74.4518},{"name":"North Brunswick","lat":40.4487,"lon":-74.4818},{"name":"Old Bridge","lat":40.4163,"lon":-74.3527},{"name":"Perth Amboy","lat":40.5068,"lon":-74.2654},{"name":"Piscataway","lat":40.5537,"lon":-74.4618},{"name":"Plainsboro","lat":40.3463,"lon":-74.5927},{"name":"Sayreville","lat":40.4587,"lon":-74.3218},{"name":"South Amboy","lat":40.4837,"lon":-74.2904},{"name":"South Brunswick","lat":40.3787,"lon":-74.5318},{"name":"South Plainfield","lat":40.5787,"lon":-74.4118},{"name":"South River","lat":40.4487,"lon":-74.3918},{"name":"Spotswood","lat":40.3926,"lon":-74.3918},{"name":"Woodbridge","lat":40.5576,"lon":-74.2843},{"name":"Aberdeen","lat":40.4168,"lon":-74.2257},{"name":"Allenhurst","lat":40.2368,"lon":-74.0018},{"name":"Asbury Park","lat":40.2204,"lon":-74.0121},{"name":"Atlantic Highlands","lat":40.4068,"lon":-74.0318},{"name":"Belmar","lat":40.1776,"lon":-74.0218},{"name":"Bradley Beach","lat":40.2026,"lon":-74.0118},{"name":"Colts Neck","lat":40.2968,"lon":-74.1718},{"name":"Deal","lat":40.2526,"lon":-73.9968},{"name":"Eatontown","lat":40.2868,"lon":-74.0518},{"name":"Fair Haven","lat":40.3568,"lon":-74.0418},{"name":"Farmingdale","lat":40.1968,"lon":-74.1618},{"name":"Freehold","lat":40.2601,"lon":-74.2737},{"name":"Hazlet","lat":40.4168,"lon":-74.1818},{"name":"Highlands","lat":40.4068,"lon":-73.9918},{"name":"Holmdel","lat":40.3768,"lon":-74.1718},{"name":"Howell Twp","lat":40.1768,"lon":-74.1918},{"name":"Keansburg","lat":40.4418,"lon":-74.1318},{"name":"Keyport","lat":40.4318,"lon":-74.2018},{"name":"Little Silver","lat":40.3368,"lon":-74.0418},{"name":"Long Branch","lat":40.3043,"lon":-73.9918},{"name":"Manalapan","lat":40.2768,"lon":-74.3318},{"name":"Manasquan","lat":40.1268,"lon":-74.0418},{"name":"Marlboro","lat":40.3168,"lon":-74.2518},{"name":"Matawan","lat":40.4148,"lon":-74.2293},{"name":"Middletown","lat":40.3768,"lon":-74.0818},{"name":"Monmouth Beach","lat":40.3268,"lon":-73.9818},{"name":"Neptune Twp","lat":40.2168,"lon":-74.0518},{"name":"Ocean Twp","lat":40.2568,"lon":-74.0518},{"name":"Oceanport","lat":40.3168,"lon":-74.0218},{"name":"Red Bank","lat":40.3471,"lon":-74.0643},{"name":"Rumson","lat":40.3668,"lon":-73.9918},{"name":"Sea Bright","lat":40.3618,"lon":-73.9718},{"name":"Sea Girt","lat":40.1326,"lon":-74.0318},{"name":"Spring Lake","lat":40.1526,"lon":-74.0318},{"name":"Tinton Falls","lat":40.2768,"lon":-74.0918},{"name":"Union Beach","lat":40.4468,"lon":-74.1618},{"name":"Upper Freehold","lat":40.1968,"lon":-74.4118},{"name":"Wall Twp","lat":40.1568,"lon":-74.0918},{"name":"West Long Branch","lat":40.2876,"lon":-74.0168},{"name":"Boonton","lat":40.9057,"lon":-74.4068},{"name":"Butler","lat":41.0037,"lon":-74.3418},{"name":"Chatham","lat":40.7407,"lon":-74.3818},{"name":"Chester","lat":40.7863,"lon":-74.6927},{"name":"Denville","lat":40.8926,"lon":-74.4768},{"name":"Dover","lat":40.884,"lon":-74.5576},{"name":"East Hanover","lat":40.8207,"lon":-74.3468},{"name":"Florham Park","lat":40.7876,"lon":-74.3868},{"name":"Hanover","lat":40.8207,"lon":-74.3768},{"name":"Jefferson Twp","lat":41.0007,"lon":-74.5518},{"name":"Kinnelon","lat":41.0007,"lon":-74.3768},{"name":"Lincoln Park","lat":40.9237,"lon":-74.3018},{"name":"Long Hill Twp","lat":40.6907,"lon":-74.4618},{"name":"Madison","lat":40.7593,"lon":-74.4168},{"name":"Mine Hill","lat":40.8807,"lon":-74.5868},{"name":"Montville","lat":40.9107,"lon":-74.3468},{"name":"Morris Plains","lat":40.8276,"lon":-74.4818},{"name":"Morris Twp","lat":40.8007,"lon":-74.4818},{"name":"Morristown","lat":40.7968,"lon":-74.4815},{"name":"Mount Arlington","lat":40.9207,"lon":-74.6368},{"name":"Mount Olive","lat":40.8807,"lon":-74.7468},{"name":"Mountain Lakes","lat":40.8907,"lon":-74.4318},{"name":"Netcong","lat":40.897,"lon":-74.7068},{"name":"Parsippany-Troy Hills","lat":40.8587,"lon":-74.4118},{"name":"Pequannock Twp","lat":40.9537,"lon":-74.2968},{"name":"Randolph","lat":40.8507,"lon":-74.5768},{"name":"Riverdale","lat":40.9907,"lon":-74.3118},{"name":"Rockaway","lat":40.9007,"lon":-74.5168},{"name":"Roxbury","lat":40.8807,"lon":-74.6668},{"name":"Washington Twp","lat":40.7707,"lon":-74.4518},{"name":"Wharton","lat":40.894,"lon":-74.5818},{"name":"Barnegat","lat":39.7526,"lon":-74.229},{"name":"Barnegat Light","lat":39.7568,"lon":-74.1118},{"name":"Bay Head","lat":40.0726,"lon":-74.0518},{"name":"Beach Haven","lat":39.5626,"lon":-74.2418},{"name":"Beachwood","lat":39.9276,"lon":-74.1918},{"name":"Berkeley Twp","lat":39.9026,"lon":-74.2218},{"name":"Brick","lat":40.0576,"lon":-74.1368},{"name":"Harvey Cedars","lat":39.7026,"lon":-74.1418},{"name":"Island Heights","lat":39.9426,"lon":-74.1518},{"name":"Jackson Twp","lat":40.0926,"lon":-74.3518},{"name":"Lacey Twp","lat":39.8526,"lon":-74.2818},{"name":"Lakehurst","lat":40.0126,"lon":-74.3118},{"name":"Lakewood","lat":40.0837,"lon":-74.2176},{"name":"Lavallette","lat":39.9726,"lon":-74.0718},{"name":"Little Egg Harbor","lat":39.6226,"lon":-74.3418},{"name":"Long Beach Twp","lat":39.6526,"lon":-74.1918},{"name":"Manchester Twp","lat":39.9626,"lon":-74.3718},{"name":"Mantoloking","lat":40.0326,"lon":-74.0518},{"name":"Ocean Gate","lat":39.9276,"lon":-74.1318},{"name":"Ocean Twp","lat":39.9226,"lon":-74.2918},{"name":"Pine Beach","lat":39.9326,"lon":-74.1718},{"name":"Plumsted Twp","lat":40.0526,"lon":-74.4718},{"name":"Point Pleasant","lat":40.0826,"lon":-74.0718},{"name":"Point Pleasant Beach","lat":40.0926,"lon":-74.0518},{"name":"Seaside Heights","lat":39.9446,"lon":-74.0718},{"name":"Seaside Park","lat":39.9276,"lon":-74.0768},{"name":"Ship Bottom","lat":39.6526,"lon":-74.1818},{"name":"South Toms River","lat":39.9426,"lon":-74.2018},{"name":"Stafford Twp","lat":39.7026,"lon":-74.2618},{"name":"Surf City","lat":39.6626,"lon":-74.1718},{"name":"Toms River","lat":39.9537,"lon":-74.1979},{"name":"Tuckerton","lat":39.6026,"lon":-74.3418},{"name":"Bloomingdale","lat":41.0523,"lon":-74.3268},{"name":"Clifton","lat":40.8584,"lon":-74.1638},{"name":"Haledon","lat":40.9376,"lon":-74.1868},{"name":"Hawthorne","lat":40.9493,"lon":-74.1537},{"name":"Little Falls","lat":40.8826,"lon":-74.2098},{"name":"North Haledon","lat":40.9576,"lon":-74.1868},{"name":"Passaic","lat":40.8568,"lon":-74.1286},{"name":"Paterson","lat":40.9168,"lon":-74.1718},{"name":"Pompton Lakes","lat":41.0037,"lon":-74.2918},{"name":"Ringwood","lat":41.1137,"lon":-74.2618},{"name":"Totowa","lat":40.9076,"lon":-74.2268},{"name":"Wanaque","lat":41.0437,"lon":-74.2918},{"name":"Wayne","lat":40.9493,"lon":-74.2768},{"name":"West Milford","lat":41.1037,"lon":-74.3818},{"name":"Woodland Park","lat":40.8876,"lon":-74.1968},{"name":"Alloway Twp","lat":39.5512,"lon":-75.334},{"name":"Carneys Point","lat":39.7112,"lon":-75.474},{"name":"Elmer","lat":39.5912,"lon":-75.169},{"name":"Lower Alloways Creek","lat":39.4612,"lon":-75.424},{"name":"Mannington Twp","lat":39.5812,"lon":-75.374},{"name":"Oldmans Twp","lat":39.7512,"lon":-75.404},{"name":"Penns Grove","lat":39.7293,"lon":-75.4679},{"name":"Pennsville","lat":39.6612,"lon":-75.504},{"name":"Pilesgrove Twp","lat":39.6612,"lon":-75.324},{"name":"Pittsgrove Twp","lat":39.5312,"lon":-75.134},{"name":"Quinton Twp","lat":39.4912,"lon":-75.354},{"name":"Salem","lat":39.5712,"lon":-75.4679},{"name":"Woodstown","lat":39.6512,"lon":-75.329},{"name":"Bedminster","lat":40.6807,"lon":-74.6527},{"name":"Bernards Twp","lat":40.6707,"lon":-74.5827},{"name":"Bernardsville","lat":40.7193,"lon":-74.5718},{"name":"Bound Brook","lat":40.5687,"lon":-74.5318},{"name":"Branchburg","lat":40.5707,"lon":-74.6727},{"name":"Bridgewater","lat":40.5931,"lon":-74.6296},{"name":"Far Hills","lat":40.6907,"lon":-74.6327},{"name":"Franklin Twp","lat":40.4707,"lon":-74.5427},{"name":"Green Brook","lat":40.6007,"lon":-74.4827},{"name":"Hillsborough","lat":40.5107,"lon":-74.6327},{"name":"Manville","lat":40.5387,"lon":-74.5827},{"name":"Montgomery Twp","lat":40.4207,"lon":-74.6727},{"name":"North Plainfield","lat":40.6307,"lon":-74.4327},{"name":"Peapack-Gladstone","lat":40.7207,"lon":-74.6527},{"name":"Raritan","lat":40.5687,"lon":-74.6318},{"name":"Rocky Hill","lat":40.3907,"lon":-74.6327},{"name":"Somerville","lat":40.5743,"lon":-74.6096},{"name":"South Bound Brook","lat":40.5537,"lon":-74.5218},{"name":"Warren Twp","lat":40.6307,"lon":-74.5127},{"name":"Watchung","lat":40.6407,"lon":-74.4627},{"name":"Andover Twp","lat":40.9963,"lon":-74.7227},{"name":"Branchville","lat":41.1463,"lon":-74.7527},{"name":"Byram Twp","lat":40.9563,"lon":-74.7027},{"name":"Frankford Twp","lat":41.1063,"lon":-74.7427},{"name":"Franklin","lat":41.1218,"lon":-74.5818},{"name":"Green Twp","lat":40.9163,"lon":-74.7527},{"name":"Hamburg","lat":41.1543,"lon":-74.5768},{"name":"Hampton Twp","lat":41.0963,"lon":-74.6227},{"name":"Hardyston Twp","lat":41.0763,"lon":-74.5627},{"name":"Hopatcong","lat":40.9326,"lon":-74.6593},{"name":"Lafayette Twp","lat":41.0863,"lon":-74.6827},{"name":"Newton","lat":41.0584,"lon":-74.7526},{"name":"Ogdensburg","lat":41.0818,"lon":-74.5918},{"name":"Sparta","lat":41.0393,"lon":-74.6268},{"name":"Stanhope","lat":40.904,"lon":-74.7068},{"name":"Sussex","lat":41.2098,"lon":-74.6076},{"name":"Vernon Twp","lat":41.2163,"lon":-74.4927},{"name":"Wantage Twp","lat":41.2363,"lon":-74.6427},{"name":"Clark","lat":40.6193,"lon":-74.3068},{"name":"Cranford","lat":40.6576,"lon":-74.2968},{"name":"Elizabeth","lat":40.6639,"lon":-74.2107},{"name":"Fanwood","lat":40.6418,"lon":-74.3868},{"name":"Garwood","lat":40.6518,"lon":-74.3218},{"name":"Hillside","lat":40.6976,"lon":-74.2268},{"name":"Kenilworth","lat":40.6768,"lon":-74.2868},{"name":"Linden","lat":40.622,"lon":-74.2446},{"name":"Mountainside","lat":40.6726,"lon":-74.3568},{"name":"New Providence","lat":40.6976,"lon":-74.4018},{"name":"Plainfield","lat":40.6337,"lon":-74.4074},{"name":"Rahway","lat":40.6076,"lon":-74.2776},{"name":"Roselle","lat":40.6526,"lon":-74.2618},{"name":"Roselle Park","lat":40.6646,"lon":-74.2706},{"name":"Scotch Plains","lat":40.6559,"lon":-74.3893},{"name":"Springfield Twp","lat":40.6976,"lon":-74.3218},{"name":"Summit","lat":40.7159,"lon":-74.3643},{"name":"Union Twp","lat":40.6976,"lon":-74.2618},{"name":"Westfield","lat":40.6589,"lon":-74.3468},{"name":"Alpha","lat":40.6663,"lon":-75.1627},{"name":"Belvidere","lat":40.8293,"lon":-75.0779},{"name":"Blairstown","lat":41.0063,"lon":-74.9627},{"name":"Franklin Twp","lat":40.7663,"lon":-75.0627},{"name":"Hackettstown","lat":40.8529,"lon":-74.8293},{"name":"Hardwick Twp","lat":41.0463,"lon":-74.9927},{"name":"Hope Twp","lat":40.9163,"lon":-74.9627},{"name":"Independence Twp","lat":40.8563,"lon":-74.8827},{"name":"Knowlton Twp","lat":41.0063,"lon":-75.0527},{"name":"Lopatcong","lat":40.6963,"lon":-75.1427},{"name":"Mansfield Twp","lat":40.7963,"lon":-74.9527},{"name":"Oxford Twp","lat":40.8063,"lon":-75.0027},{"name":"Phillipsburg","lat":40.6937,"lon":-75.1896},{"name":"Pohatcong Twp","lat":40.7263,"lon":-75.1327},{"name":"Washington","lat":40.758,"lon":-74.9793},{"name":"Washington Twp","lat":40.7763,"lon":-74.9827},{"name":"White Twp","lat":40.7763,"lon":-75.0727}];
+TOWNS.sort((a,b) => a.name.localeCompare(b.name));
+const COUNTIES = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"ATLANTIC"},"geometry":{"type":"Polygon","coordinates":[[[-74.6744,39.6886],[-74.6548,39.6269],[-74.621,39.6267],[-74.5767,39.5986],[-74.5539,39.5984],[-74.5397,39.575],[-74.5148,39.574],[-74.4931,39.5556],[-74.4561,39.5473],[-74.4465,39.559],[-74.4375,39.5412],[-74.438,39.5538],[-74.4175,39.5574],[-74.3808,39.4985],[-74.3095,39.5033],[-74.3019,39.4888],[-74.3298,39.437],[-74.418,39.3564],[-74.5403,39.2995],[-74.5886,39.3101],[-74.6212,39.2925],[-74.699,39.2892],[-74.8603,39.3192],[-74.856,39.4242],[-74.9853,39.515],[-74.7362,39.7298],[-74.6744,39.6886]]]}},{"type":"Feature","properties":{"name":"BERGEN"},"geometry":{"type":"Polygon","coordinates":[[[-73.9025,40.9973],[-73.9842,40.8056],[-73.9933,40.8013],[-74.0169,40.8236],[-74.0608,40.8057],[-74.0891,40.7796],[-74.0903,40.7616],[-74.1009,40.776],[-74.1272,40.7713],[-74.1475,40.7864],[-74.1226,40.8251],[-74.1211,40.8579],[-74.107,40.859],[-74.1303,40.8855],[-74.1294,40.9202],[-74.1482,40.9421],[-74.141,40.9664],[-74.1703,40.9839],[-74.2245,40.9813],[-74.2722,41.0179],[-74.2112,41.1337],[-73.9025,40.9973]]]}},{"type":"Feature","properties":{"name":"BURLINGTON"},"geometry":{"type":"Polygon","coordinates":[[[-74.711,40.1804],[-74.6217,40.1411],[-74.5878,40.1383],[-74.3897,39.7733],[-74.3906,39.596],[-74.4009,39.5723],[-74.4384,39.5535],[-74.4352,39.5415],[-74.4463,39.5589],[-74.4561,39.5473],[-74.4931,39.5556],[-74.5148,39.574],[-74.5397,39.575],[-74.5539,39.5984],[-74.5767,39.5986],[-74.621,39.6267],[-74.6548,39.6269],[-74.6679,39.6836],[-74.8069,39.7835],[-74.8948,39.7833],[-74.9307,39.8859],[-74.9839,39.9268],[-74.9757,39.9398],[-75.0151,39.9468],[-75.0202,39.9683],[-75.01,39.98],[-75.0189,39.9896],[-75.0604,39.991],[-75.0487,40.0093],[-74.9443,40.0637],[-74.8611,40.0838],[-74.8228,40.127],[-74.7855,40.121],[-74.7409,40.1353],[-74.7137,40.1528],[-74.704,40.1681],[-74.711,40.1804]]]}},{"type":"Feature","properties":{"name":"CAMDEN"},"geometry":{"type":"Polygon","coordinates":[[[-75.0331,39.9948],[-75.01,39.98],[-75.0202,39.9683],[-75.0143,39.9459],[-74.9757,39.9398],[-74.9839,39.9268],[-74.9307,39.8859],[-74.8949,39.7834],[-74.8194,39.788],[-74.7362,39.7298],[-74.8773,39.6084],[-74.9027,39.6319],[-74.9089,39.6653],[-74.9306,39.6909],[-75.0243,39.7306],[-75.0213,39.7453],[-75.0545,39.7826],[-75.0871,39.7796],[-75.0705,39.7936],[-75.0887,39.8142],[-75.0834,39.8426],[-75.1385,39.8876],[-75.1306,39.959],[-75.0331,39.9948]]]}},{"type":"Feature","properties":{"name":"CAPE MAY"},"geometry":{"type":"Polygon","coordinates":[[[-74.8596,39.319],[-74.699,39.2892],[-74.6212,39.2925],[-74.5886,39.3101],[-74.5403,39.2995],[-74.6119,39.2463],[-74.6717,39.1799],[-74.7149,39.1159],[-74.7037,39.107],[-74.7959,38.9913],[-74.8617,38.9366],[-74.9624,38.9311],[-74.9723,38.9405],[-74.9569,38.9973],[-74.9011,39.0904],[-74.8853,39.1449],[-74.8871,39.16],[-74.9225,39.1888],[-74.9257,39.2189],[-74.8964,39.2351],[-74.8821,39.3084],[-74.8596,39.319]]]}},{"type":"Feature","properties":{"name":"CUMBERLAND"},"geometry":{"type":"Polygon","coordinates":[[[-75.0619,39.5688],[-74.856,39.4242],[-74.8613,39.3238],[-74.8821,39.3084],[-74.8964,39.2351],[-74.9257,39.2189],[-74.9163,39.1769],[-74.927,39.187],[-75.0257,39.1936],[-75.0244,39.212],[-75.0496,39.2157],[-75.1161,39.2119],[-75.1276,39.1905],[-75.1372,39.1814],[-75.1665,39.204],[-75.1732,39.239],[-75.2415,39.2747],[-75.2557,39.3015],[-75.2907,39.292],[-75.3285,39.3422],[-75.3505,39.3499],[-75.362,39.3408],[-75.4174,39.3881],[-75.4049,39.4064],[-75.4196,39.4118],[-75.4078,39.4243],[-75.4184,39.4324],[-75.4092,39.4373],[-75.4139,39.4534],[-75.3683,39.4565],[-75.3424,39.4906],[-75.318,39.492],[-75.2384,39.559],[-75.0833,39.4575],[-75.0619,39.5688]]]}},{"type":"Feature","properties":{"name":"ESSEX"},"geometry":{"type":"Polygon","coordinates":[[[-74.3343,40.9055],[-74.2697,40.8965],[-74.1299,40.82],[-74.1659,40.7471],[-74.1578,40.7338],[-74.1178,40.7394],[-74.1143,40.7006],[-74.132,40.6738],[-74.1651,40.6902],[-74.2015,40.6867],[-74.222,40.7073],[-74.2856,40.7222],[-74.3255,40.7169],[-74.3716,40.7393],[-74.3575,40.7547],[-74.3774,40.7614],[-74.367,40.7933],[-74.335,40.8171],[-74.3174,40.8638],[-74.337,40.8667],[-74.3405,40.88],[-74.3343,40.9055]]]}},{"type":"Feature","properties":{"name":"GLOUCESTER"},"geometry":{"type":"Polygon","coordinates":[[[-75.1286,39.8827],[-75.0833,39.8424],[-75.0887,39.8142],[-75.0705,39.7936],[-75.0871,39.7796],[-75.0545,39.7826],[-75.0213,39.7453],[-75.0243,39.7306],[-74.9306,39.6909],[-74.9089,39.6653],[-74.9027,39.6319],[-74.8773,39.6084],[-74.9853,39.515],[-75.1998,39.667],[-75.2349,39.6616],[-75.2535,39.6791],[-75.3263,39.69],[-75.3766,39.7264],[-75.3767,39.745],[-75.4059,39.7633],[-75.395,39.7737],[-75.4074,39.7873],[-75.4291,39.7838],[-75.3426,39.8449],[-75.2587,39.851],[-75.1844,39.881],[-75.1286,39.8827]]]}},{"type":"Feature","properties":{"name":"HUDSON"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-74.1614,40.6442],[-74.1589,40.6449],[-74.1579,40.6437],[-74.1614,40.6442]]],[[[-74.0399,40.7009],[-74.0377,40.6993],[-74.0382,40.6984],[-74.0393,40.6981],[-74.0412,40.6995],[-74.0417,40.6965],[-74.0437,40.698],[-74.0399,40.7009]],[[-74.0407,40.7002],[-74.0399,40.6986],[-74.0384,40.6987],[-74.0407,40.7002]]],[[[-74.0155,40.8229],[-73.992,40.7972],[-74.0272,40.7573],[-74.0349,40.7058],[-74.08,40.6889],[-74.0665,40.6661],[-74.0964,40.6747],[-74.0706,40.6607],[-74.1065,40.6704],[-74.0872,40.6538],[-74.163,40.6459],[-74.1142,40.7012],[-74.1184,40.7403],[-74.1573,40.7337],[-74.1656,40.7445],[-74.1475,40.7864],[-74.1272,40.7713],[-74.1009,40.776],[-74.0903,40.7616],[-74.0768,40.7956],[-74.0155,40.8229]]]]}},{"type":"Feature","properties":{"name":"HUNTERDON"},"geometry":{"type":"Polygon","coordinates":[[[-74.8898,40.7877],[-74.8236,40.7422],[-74.7243,40.7194],[-74.7158,40.7003],[-74.7308,40.6655],[-74.7195,40.6544],[-74.7277,40.6361],[-74.7027,40.6211],[-74.7218,40.6007],[-74.7249,40.5888],[-74.713,40.5841],[-74.776,40.5036],[-74.7979,40.5157],[-74.7481,40.4242],[-74.8085,40.4167],[-74.802,40.385],[-74.8697,40.3778],[-74.8563,40.3467],[-74.9323,40.3394],[-74.9433,40.3424],[-74.9673,40.3986],[-74.9961,40.4106],[-75.0282,40.404],[-75.0601,40.4205],[-75.0709,40.4565],[-75.062,40.4884],[-75.069,40.5425],[-75.1168,40.5733],[-75.1727,40.5646],[-75.1954,40.5805],[-75.1457,40.6288],[-74.9689,40.7105],[-74.904,40.7812],[-74.8898,40.7877]]]}},{"type":"Feature","properties":{"name":"MERCER"},"geometry":{"type":"Polygon","coordinates":[[[-74.7221,40.3752],[-74.6539,40.3911],[-74.6225,40.3843],[-74.631,40.3403],[-74.6224,40.3246],[-74.5567,40.2917],[-74.5281,40.2943],[-74.482,40.2739],[-74.4815,40.2429],[-74.5433,40.2167],[-74.5712,40.1853],[-74.6146,40.1824],[-74.588,40.1382],[-74.6217,40.1411],[-74.7004,40.1837],[-74.7211,40.15],[-74.7713,40.2149],[-74.8398,40.2483],[-74.8715,40.2983],[-74.9429,40.3417],[-74.8563,40.3467],[-74.8697,40.3778],[-74.802,40.385],[-74.8085,40.4167],[-74.7481,40.4242],[-74.7221,40.3752]]]}},{"type":"Feature","properties":{"name":"MONMOUTH"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-73.9932,40.4228],[-73.9934,40.4221],[-73.9943,40.4184],[-73.9954,40.4204],[-73.9932,40.4228]]],[[[-73.9988,40.4762],[-73.9826,40.4472],[-73.9724,40.333],[-74.0314,40.101],[-74.0485,40.1066],[-74.0727,40.0894],[-74.1075,40.1371],[-74.1503,40.0989],[-74.1787,40.1109],[-74.2307,40.1096],[-74.2438,40.1163],[-74.2615,40.167],[-74.4067,40.1724],[-74.5531,40.0791],[-74.6146,40.1824],[-74.5712,40.1853],[-74.5433,40.2167],[-74.4815,40.2429],[-74.4874,40.2531],[-74.4612,40.2512],[-74.3935,40.2795],[-74.3775,40.3054],[-74.2479,40.4066],[-74.2478,40.4312],[-74.2247,40.4535],[-74.2003,40.4392],[-74.1795,40.4585],[-74.1583,40.4471],[-74.1343,40.4569],[-73.9858,40.4046],[-73.9928,40.4448],[-74.02,40.4736],[-73.9988,40.4762]]]]}},{"type":"Feature","properties":{"name":"OCEAN"},"geometry":{"type":"Polygon","coordinates":[[[-74.2613,40.1669],[-74.2319,40.1098],[-74.1787,40.1109],[-74.1503,40.0989],[-74.1075,40.1371],[-74.0727,40.0894],[-74.0485,40.1066],[-74.0314,40.101],[-74.0771,39.9093],[-74.0927,39.7572],[-74.2354,39.5611],[-74.3019,39.4888],[-74.3095,39.5033],[-74.3808,39.4985],[-74.417,39.5506],[-74.419,39.5683],[-74.4009,39.5723],[-74.3906,39.596],[-74.3897,39.7733],[-74.5531,40.0791],[-74.4067,40.1724],[-74.2613,40.1669]]]}},{"type":"Feature","properties":{"name":"PASSAIC"},"geometry":{"type":"Polygon","coordinates":[[[-74.2112,41.1337],[-74.2722,41.0179],[-74.2245,40.9813],[-74.1703,40.9839],[-74.141,40.9664],[-74.1482,40.9421],[-74.1294,40.9202],[-74.1303,40.8855],[-74.107,40.8616],[-74.1212,40.8578],[-74.1268,40.8207],[-74.2643,40.8868],[-74.267,40.9104],[-74.2885,40.9248],[-74.2775,40.9736],[-74.2977,40.9799],[-74.2989,41.003],[-74.3873,41.0117],[-74.4189,41.0287],[-74.435,41.02],[-74.4269,41.036],[-74.4469,41.0544],[-74.502,41.039],[-74.4868,41.0763],[-74.5032,41.0859],[-74.3675,41.2032],[-74.2112,41.1337]]]}},{"type":"Feature","properties":{"name":"SALEM"},"geometry":{"type":"Polygon","coordinates":[[[-75.407,39.7851],[-75.395,39.7737],[-75.4059,39.7633],[-75.3767,39.745],[-75.3766,39.7264],[-75.3263,39.69],[-75.2535,39.6791],[-75.2349,39.6616],[-75.1998,39.667],[-75.0619,39.5688],[-75.0745,39.5445],[-75.0804,39.4603],[-75.2384,39.559],[-75.318,39.492],[-75.3424,39.4906],[-75.3683,39.4565],[-75.4,39.4623],[-75.4142,39.4531],[-75.4092,39.4373],[-75.4184,39.4324],[-75.4078,39.4243],[-75.4196,39.4118],[-75.4049,39.4064],[-75.4175,39.3884],[-75.4068,39.3812],[-75.4297,39.3893],[-75.4639,39.4392],[-75.5363,39.4607],[-75.5426,39.4966],[-75.5263,39.4926],[-75.5335,39.541],[-75.5127,39.5778],[-75.5535,39.6018],[-75.5588,39.63],[-75.5155,39.6663],[-75.5067,39.6972],[-75.4764,39.7162],[-75.4597,39.7635],[-75.407,39.7851]]]}},{"type":"Feature","properties":{"name":"SOMERSET"},"geometry":{"type":"Polygon","coordinates":[[[-74.5545,40.7568],[-74.5494,40.7339],[-74.5309,40.7299],[-74.5139,40.7011],[-74.5344,40.6673],[-74.5232,40.6492],[-74.461,40.6735],[-74.4508,40.6542],[-74.4018,40.6645],[-74.4272,40.6171],[-74.5259,40.5684],[-74.5143,40.5422],[-74.4669,40.5089],[-74.4599,40.491],[-74.585,40.4182],[-74.5879,40.3941],[-74.6126,40.3759],[-74.6539,40.3911],[-74.7221,40.3752],[-74.7979,40.5157],[-74.776,40.5036],[-74.713,40.5842],[-74.7249,40.5888],[-74.7218,40.6007],[-74.7027,40.6211],[-74.7276,40.636],[-74.7195,40.6544],[-74.7308,40.6655],[-74.7158,40.7003],[-74.7257,40.7195],[-74.5545,40.7568]]]}},{"type":"Feature","properties":{"name":"SUSSEX"},"geometry":{"type":"Polygon","coordinates":[[[-74.6955,41.3577],[-74.3675,41.2032],[-74.6322,40.9737],[-74.6528,40.9217],[-74.7115,40.8992],[-74.7319,40.9209],[-74.7694,40.9109],[-74.9682,41.0957],[-74.992,41.0905],[-74.8824,41.1807],[-74.8594,41.2186],[-74.8615,41.2431],[-74.8295,41.2879],[-74.7921,41.3112],[-74.7933,41.3222],[-74.767,41.3278],[-74.7528,41.3465],[-74.6955,41.3577]]]}},{"type":"Feature","properties":{"name":"UNION"},"geometry":{"type":"Polygon","coordinates":[[[-74.3716,40.7393],[-74.3255,40.7169],[-74.2856,40.7222],[-74.222,40.7073],[-74.2015,40.6867],[-74.1651,40.6902],[-74.132,40.6738],[-74.163,40.6459],[-74.2003,40.6371],[-74.205,40.5938],[-74.2146,40.6042],[-74.291,40.5919],[-74.3029,40.6087],[-74.4585,40.5948],[-74.4176,40.6276],[-74.4017,40.6642],[-74.4508,40.6542],[-74.461,40.6735],[-74.3716,40.7393]]]}},{"type":"Feature","properties":{"name":"WARREN"},"geometry":{"type":"Polygon","coordinates":[[[-74.9669,41.0944],[-74.7694,40.9109],[-74.8061,40.8837],[-74.803,40.8617],[-74.8425,40.8116],[-74.9044,40.7809],[-74.9689,40.7105],[-75.1457,40.6288],[-75.1897,40.5919],[-75.2003,40.6486],[-75.177,40.6752],[-75.2037,40.6899],[-75.1821,40.7307],[-75.1964,40.7515],[-75.1715,40.7775],[-75.1348,40.7735],[-75.1085,40.7909],[-75.0837,40.8249],[-75.0962,40.8465],[-75.0651,40.8478],[-75.0508,40.8661],[-75.1203,40.9688],[-75.1352,40.9726],[-75.1314,40.9904],[-75.0266,41.0398],[-75.0124,41.0672],[-74.9669,41.0944]]]}},{"type":"Feature","properties":{"name":"MORRIS"},"geometry":{"type":"Polygon","coordinates":[[[-74.5005,41.086],[-74.4868,41.0765],[-74.4977,41.0341],[-74.4469,41.0544],[-74.4269,41.036],[-74.435,41.02],[-74.4189,41.0287],[-74.3873,41.0117],[-74.2992,41.0031],[-74.2977,40.9799],[-74.2775,40.9736],[-74.2893,40.9283],[-74.2667,40.9077],[-74.2841,40.8948],[-74.2926,40.9059],[-74.3343,40.9055],[-74.3372,40.8669],[-74.3174,40.8638],[-74.335,40.8171],[-74.367,40.7933],[-74.3774,40.7614],[-74.3576,40.7546],[-74.3909,40.7183],[-74.4516,40.6857],[-74.4541,40.6741],[-74.5185,40.6485],[-74.5344,40.6673],[-74.5139,40.7011],[-74.5309,40.7299],[-74.5494,40.7339],[-74.556,40.7583],[-74.7327,40.7201],[-74.8236,40.7422],[-74.8898,40.7877],[-74.8505,40.804],[-74.8186,40.8365],[-74.8216,40.8492],[-74.8019,40.8639],[-74.8074,40.8817],[-74.779,40.9064],[-74.7319,40.9209],[-74.7114,40.8992],[-74.6532,40.9213],[-74.6322,40.9737],[-74.5005,41.086]]]}},{"type":"Feature","properties":{"name":"MIDDLESEX"},"geometry":{"type":"Polygon","coordinates":[[[-74.2954,40.5952],[-74.2146,40.6042],[-74.205,40.5938],[-74.2175,40.5612],[-74.2542,40.5503],[-74.2501,40.5231],[-74.2705,40.485],[-74.2619,40.4648],[-74.2231,40.4497],[-74.2478,40.4312],[-74.2479,40.4066],[-74.3775,40.3054],[-74.3934,40.2796],[-74.4612,40.2512],[-74.485,40.2533],[-74.482,40.2739],[-74.5281,40.2943],[-74.5567,40.2917],[-74.6224,40.3246],[-74.6246,40.3647],[-74.5883,40.3935],[-74.5853,40.4179],[-74.4599,40.491],[-74.5267,40.5595],[-74.5162,40.5813],[-74.4662,40.5991],[-74.3029,40.6087],[-74.2954,40.5952]]]}}]};
 
-function projectToSVG(lon, lat) {
-  const x = (lon - PROJ.min_lon) * PROJ.cos_lat * PROJ.scale + PROJ.off_x;
-  const y = (PROJ.max_lat - lat) * PROJ.scale + PROJ.off_y;
-  return [Math.round(x*10)/10, Math.round(y*10)/10];
-}
-
-// All NJ municipalities
-const TOWNS = [{"name": "Absecon", "lat": 39.4285, "lon": -74.4951}, {"name": "Atlantic City", "lat": 39.3643, "lon": -74.4229}, {"name": "Brigantine", "lat": 39.4101, "lon": -74.3646}, {"name": "Buena", "lat": 39.5124, "lon": -74.9271}, {"name": "Buena Vista Twp", "lat": 39.5279, "lon": -74.9668}, {"name": "Corbin City", "lat": 39.3085, "lon": -74.7868}, {"name": "Egg Harbor City", "lat": 39.5288, "lon": -74.6477}, {"name": "Egg Harbor Twp", "lat": 39.3838, "lon": -74.6113}, {"name": "Estell Manor", "lat": 39.4118, "lon": -74.836}, {"name": "Folsom", "lat": 39.601, "lon": -74.8464}, {"name": "Galloway Twp", "lat": 39.4927, "lon": -74.4835}, {"name": "Hamilton Twp", "lat": 39.4468, "lon": -74.6683}, {"name": "Hammonton", "lat": 39.6366, "lon": -74.8021}, {"name": "Linwood", "lat": 39.3396, "lon": -74.5751}, {"name": "Longport", "lat": 39.318, "lon": -74.5328}, {"name": "Margate City", "lat": 39.328, "lon": -74.5093}, {"name": "Mullica Twp", "lat": 39.581, "lon": -74.638}, {"name": "Northfield", "lat": 39.3703, "lon": -74.5503}, {"name": "Pleasantville", "lat": 39.3896, "lon": -74.524}, {"name": "Port Republic", "lat": 39.5204, "lon": -74.4861}, {"name": "Somers Point", "lat": 39.3176, "lon": -74.5947}, {"name": "Ventnor City", "lat": 39.3393, "lon": -74.4832}, {"name": "Weymouth Twp", "lat": 39.4872, "lon": -74.826}, {"name": "Bergenfield", "lat": 40.9276, "lon": -74.0001}, {"name": "Bogota", "lat": 40.8762, "lon": -74.0299}, {"name": "Cliffside Park", "lat": 40.8215, "lon": -73.9876}, {"name": "Closter", "lat": 40.9732, "lon": -73.9615}, {"name": "East Rutherford", "lat": 40.834, "lon": -74.0968}, {"name": "Edgewater", "lat": 40.8271, "lon": -73.9754}, {"name": "Elmwood Park", "lat": 40.904, "lon": -74.1204}, {"name": "Englewood", "lat": 40.8929, "lon": -73.9726}, {"name": "Fair Lawn", "lat": 40.9404, "lon": -74.1318}, {"name": "Fort Lee", "lat": 40.851, "lon": -73.9712}, {"name": "Garfield", "lat": 40.8815, "lon": -74.1132}, {"name": "Glen Rock", "lat": 40.959, "lon": -74.1318}, {"name": "Hackensack", "lat": 40.8859, "lon": -74.0435}, {"name": "Hasbrouck Heights", "lat": 40.8623, "lon": -74.0776}, {"name": "Hawthorne", "lat": 40.9493, "lon": -74.1537}, {"name": "Ho-Ho-Kus", "lat": 41.0001, "lon": -74.1007}, {"name": "Leonia", "lat": 40.8612, "lon": -73.9887}, {"name": "Lodi", "lat": 40.8823, "lon": -74.0832}, {"name": "Lyndhurst", "lat": 40.8121, "lon": -74.1243}, {"name": "Mahwah", "lat": 41.0887, "lon": -74.1438}, {"name": "Maywood", "lat": 40.9026, "lon": -74.0621}, {"name": "Moonachie", "lat": 40.8393, "lon": -74.0493}, {"name": "New Milford", "lat": 40.9351, "lon": -74.019}, {"name": "North Arlington", "lat": 40.7884, "lon": -74.1332}, {"name": "Oradell", "lat": 40.9576, "lon": -74.0368}, {"name": "Palisades Park", "lat": 40.8479, "lon": -73.9971}, {"name": "Paramus", "lat": 40.9445, "lon": -74.0701}, {"name": "Park Ridge", "lat": 41.0373, "lon": -74.0401}, {"name": "Ramsey", "lat": 41.0573, "lon": -74.1415}, {"name": "Ridgefield", "lat": 40.834, "lon": -74.0087}, {"name": "Ridgefield Park", "lat": 40.8576, "lon": -74.0215}, {"name": "Ridgewood", "lat": 40.9793, "lon": -74.1168}, {"name": "River Edge", "lat": 40.9273, "lon": -74.0387}, {"name": "Rochelle Park", "lat": 40.9076, "lon": -74.0749}, {"name": "Rutherford", "lat": 40.8265, "lon": -74.1068}, {"name": "Saddle Brook", "lat": 40.8998, "lon": -74.0926}, {"name": "Teaneck", "lat": 40.8976, "lon": -74.0126}, {"name": "Tenafly", "lat": 40.9254, "lon": -73.9626}, {"name": "Waldwick", "lat": 41.0115, "lon": -74.1168}, {"name": "Westwood", "lat": 41.0012, "lon": -74.0318}, {"name": "Woodcliff Lake", "lat": 41.0251, "lon": -74.0668}, {"name": "Wyckoff", "lat": 40.9987, "lon": -74.1668}, {"name": "Beverly", "lat": 40.066, "lon": -74.919}, {"name": "Bordentown", "lat": 40.1465, "lon": -74.7118}, {"name": "Burlington City", "lat": 40.0712, "lon": -74.8546}, {"name": "Cinnaminson", "lat": 39.9963, "lon": -74.9927}, {"name": "Delran", "lat": 40.0163, "lon": -74.9527}, {"name": "Eastampton", "lat": 39.9854, "lon": -74.739}, {"name": "Evesham Twp", "lat": 39.8586, "lon": -74.859}, {"name": "Florence Twp", "lat": 40.1263, "lon": -74.8027}, {"name": "Lumberton Twp", "lat": 39.9586, "lon": -74.809}, {"name": "Maple Shade", "lat": 39.9527, "lon": -74.9927}, {"name": "Medford", "lat": 39.8586, "lon": -74.8227}, {"name": "Moorestown", "lat": 39.9686, "lon": -74.949}, {"name": "Mount Holly", "lat": 39.9926, "lon": -74.7877}, {"name": "Mount Laurel", "lat": 39.9386, "lon": -74.8927}, {"name": "Palmyra", "lat": 40.0063, "lon": -75.029}, {"name": "Pemberton Twp", "lat": 39.9586, "lon": -74.6827}, {"name": "Riverside", "lat": 40.0326, "lon": -74.9527}, {"name": "Riverton", "lat": 40.0126, "lon": -75.0127}, {"name": "Shamong Twp", "lat": 39.7886, "lon": -74.7227}, {"name": "Southampton Twp", "lat": 39.9254, "lon": -74.709}, {"name": "Tabernacle Twp", "lat": 39.7786, "lon": -74.709}, {"name": "Westampton", "lat": 40.0163, "lon": -74.819}, {"name": "Willingboro", "lat": 40.0263, "lon": -74.869}, {"name": "Woodland Twp", "lat": 39.8286, "lon": -74.5227}, {"name": "Audubon", "lat": 39.891, "lon": -75.0731}, {"name": "Barrington", "lat": 39.8651, "lon": -75.0554}, {"name": "Bellmawr", "lat": 39.8676, "lon": -75.0951}, {"name": "Berlin", "lat": 39.7912, "lon": -74.929}, {"name": "Camden", "lat": 39.9259, "lon": -75.1196}, {"name": "Cherry Hill", "lat": 39.9018, "lon": -74.9812}, {"name": "Clementon", "lat": 39.8115, "lon": -74.9823}, {"name": "Collingswood", "lat": 39.9176, "lon": -75.0712}, {"name": "Gibbsboro", "lat": 39.8376, "lon": -74.9612}, {"name": "Gloucester City", "lat": 39.8912, "lon": -75.1162}, {"name": "Gloucester Twp", "lat": 39.8012, "lon": -74.959}, {"name": "Haddon Heights", "lat": 39.8776, "lon": -75.0651}, {"name": "Haddon Twp", "lat": 39.8976, "lon": -75.0612}, {"name": "Haddonfield", "lat": 39.8926, "lon": -75.0351}, {"name": "Lindenwold", "lat": 39.8212, "lon": -74.9912}, {"name": "Merchantville", "lat": 39.9476, "lon": -75.0612}, {"name": "Pennsauken", "lat": 39.9663, "lon": -75.058}, {"name": "Pine Hill", "lat": 39.7812, "lon": -74.989}, {"name": "Runnemede", "lat": 39.8526, "lon": -75.0712}, {"name": "Somerdale", "lat": 39.8412, "lon": -75.0212}, {"name": "Stratford", "lat": 39.8276, "lon": -75.0151}, {"name": "Voorhees", "lat": 39.8486, "lon": -74.9527}, {"name": "Waterford Twp", "lat": 39.7412, "lon": -74.849}, {"name": "Winslow Twp", "lat": 39.7012, "lon": -74.869}, {"name": "Avalon", "lat": 39.1015, "lon": -74.7176}, {"name": "Cape May", "lat": 38.9351, "lon": -74.906}, {"name": "Cape May Court House", "lat": 39.0851, "lon": -74.826}, {"name": "Dennis Twp", "lat": 39.1851, "lon": -74.846}, {"name": "Lower Twp", "lat": 38.9651, "lon": -74.886}, {"name": "Middle Twp", "lat": 39.0451, "lon": -74.866}, {"name": "North Wildwood", "lat": 38.9978, "lon": -74.7893}, {"name": "Ocean City", "lat": 39.2776, "lon": -74.5751}, {"name": "Sea Isle City", "lat": 39.1536, "lon": -74.6932}, {"name": "Stone Harbor", "lat": 39.0578, "lon": -74.7593}, {"name": "Upper Twp", "lat": 39.2051, "lon": -74.746}, {"name": "West Cape May", "lat": 38.9401, "lon": -74.936}, {"name": "West Wildwood", "lat": 38.9878, "lon": -74.8193}, {"name": "Wildwood", "lat": 38.9918, "lon": -74.8148}, {"name": "Wildwood Crest", "lat": 38.9728, "lon": -74.8248}, {"name": "Woodbine", "lat": 39.2415, "lon": -74.8168}, {"name": "Bridgeton", "lat": 39.4271, "lon": -75.234}, {"name": "Commercial Twp", "lat": 39.3571, "lon": -75.174}, {"name": "Deerfield Twp", "lat": 39.4871, "lon": -75.164}, {"name": "Downe Twp", "lat": 39.2771, "lon": -75.134}, {"name": "Fairfield Twp", "lat": 39.3771, "lon": -75.264}, {"name": "Greenwich Twp", "lat": 39.3971, "lon": -75.334}, {"name": "Hopewell Twp", "lat": 39.4571, "lon": -75.164}, {"name": "Lawrence Twp", "lat": 39.3571, "lon": -75.084}, {"name": "Millville", "lat": 39.4021, "lon": -75.0393}, {"name": "Stow Creek Twp", "lat": 39.4271, "lon": -75.354}, {"name": "Upper Deerfield Twp", "lat": 39.5071, "lon": -75.214}, {"name": "Vineland", "lat": 39.4863, "lon": -75.026}, {"name": "Belleville", "lat": 40.7934, "lon": -74.1504}, {"name": "Bloomfield", "lat": 40.8068, "lon": -74.1857}, {"name": "Caldwell", "lat": 40.8398, "lon": -74.2768}, {"name": "Cedar Grove", "lat": 40.8576, "lon": -74.2279}, {"name": "East Orange", "lat": 40.7676, "lon": -74.2098}, {"name": "Essex Fells", "lat": 40.8276, "lon": -74.2768}, {"name": "Fairfield Twp", "lat": 40.8827, "lon": -74.3043}, {"name": "Glen Ridge", "lat": 40.8034, "lon": -74.2037}, {"name": "Irvington", "lat": 40.7326, "lon": -74.2348}, {"name": "Livingston", "lat": 40.7926, "lon": -74.3098}, {"name": "Maplewood", "lat": 40.7326, "lon": -74.2704}, {"name": "Millburn", "lat": 40.7276, "lon": -74.3068}, {"name": "Montclair", "lat": 40.8259, "lon": -74.209}, {"name": "Newark", "lat": 40.7357, "lon": -74.1724}, {"name": "North Caldwell", "lat": 40.8648, "lon": -74.2668}, {"name": "Nutley", "lat": 40.8221, "lon": -74.159}, {"name": "Orange", "lat": 40.7701, "lon": -74.2326}, {"name": "Roseland", "lat": 40.8226, "lon": -74.3068}, {"name": "South Orange", "lat": 40.7476, "lon": -74.2618}, {"name": "Verona", "lat": 40.8298, "lon": -74.2418}, {"name": "West Caldwell", "lat": 40.8498, "lon": -74.2968}, {"name": "West Orange", "lat": 40.7987, "lon": -74.2618}, {"name": "Clayton", "lat": 39.661, "lon": -75.089}, {"name": "Deptford Twp", "lat": 39.8312, "lon": -75.119}, {"name": "East Greenwich Twp", "lat": 39.7912, "lon": -75.179}, {"name": "Elk Twp", "lat": 39.6612, "lon": -75.179}, {"name": "Franklin Twp", "lat": 39.5912, "lon": -75.119}, {"name": "Glassboro", "lat": 39.7029, "lon": -75.1118}, {"name": "Greenwich Twp", "lat": 39.8012, "lon": -75.159}, {"name": "Harrison Twp", "lat": 39.7412, "lon": -75.149}, {"name": "Logan Twp", "lat": 39.8012, "lon": -75.289}, {"name": "Mantua Twp", "lat": 39.7812, "lon": -75.179}, {"name": "Monroe Twp", "lat": 39.6612, "lon": -74.989}, {"name": "National Park", "lat": 39.8612, "lon": -75.179}, {"name": "Paulsboro", "lat": 39.8412, "lon": -75.249}, {"name": "Pitman", "lat": 39.7329, "lon": -75.1318}, {"name": "South Harrison Twp", "lat": 39.6812, "lon": -75.229}, {"name": "Swedesboro", "lat": 39.7412, "lon": -75.309}, {"name": "Washington Twp", "lat": 39.7512, "lon": -75.069}, {"name": "Wenonah", "lat": 39.7926, "lon": -75.149}, {"name": "West Deptford Twp", "lat": 39.8412, "lon": -75.199}, {"name": "Westville", "lat": 39.8676, "lon": -75.1312}, {"name": "Woodbury", "lat": 39.8376, "lon": -75.1526}, {"name": "Woodbury Heights", "lat": 39.8176, "lon": -75.1526}, {"name": "Bayonne", "lat": 40.6687, "lon": -74.1143}, {"name": "East Newark", "lat": 40.7487, "lon": -74.1604}, {"name": "Guttenberg", "lat": 40.7915, "lon": -74.004}, {"name": "Harrison", "lat": 40.7437, "lon": -74.1543}, {"name": "Hoboken", "lat": 40.744, "lon": -74.0324}, {"name": "Jersey City", "lat": 40.7282, "lon": -74.0776}, {"name": "Kearny", "lat": 40.7643, "lon": -74.1457}, {"name": "North Bergen", "lat": 40.804, "lon": -74.0118}, {"name": "Secaucus", "lat": 40.7893, "lon": -74.0568}, {"name": "Union City", "lat": 40.7676, "lon": -74.0243}, {"name": "Weehawken", "lat": 40.7676, "lon": -74.017}, {"name": "West New York", "lat": 40.789, "lon": -74.0126}, {"name": "Califon", "lat": 40.7193, "lon": -74.8368}, {"name": "Clinton", "lat": 40.6368, "lon": -74.9096}, {"name": "Flemington", "lat": 40.5126, "lon": -74.8593}, {"name": "Frenchtown", "lat": 40.5263, "lon": -75.0527}, {"name": "Hampton", "lat": 40.7063, "lon": -74.9527}, {"name": "High Bridge", "lat": 40.6663, "lon": -74.8927}, {"name": "Lambertville", "lat": 40.3663, "lon": -74.9427}, {"name": "Lebanon Twp", "lat": 40.7063, "lon": -74.8627}, {"name": "Milford", "lat": 40.5663, "lon": -75.0827}, {"name": "Raritan Twp", "lat": 40.5163, "lon": -74.8327}, {"name": "Readington Twp", "lat": 40.5663, "lon": -74.7427}, {"name": "Tewksbury Twp", "lat": 40.6963, "lon": -74.7827}, {"name": "West Amwell Twp", "lat": 40.3963, "lon": -74.9827}, {"name": "East Windsor", "lat": 40.2663, "lon": -74.5327}, {"name": "Ewing Twp", "lat": 40.2663, "lon": -74.8027}, {"name": "Hamilton Twp", "lat": 40.2263, "lon": -74.6727}, {"name": "Hightstown", "lat": 40.2668, "lon": -74.5232}, {"name": "Hopewell", "lat": 40.3863, "lon": -74.7627}, {"name": "Lawrence Twp", "lat": 40.2963, "lon": -74.7327}, {"name": "Pennington", "lat": 40.3263, "lon": -74.7927}, {"name": "Princeton", "lat": 40.3573, "lon": -74.6596}, {"name": "Robbinsville", "lat": 40.2163, "lon": -74.6127}, {"name": "Trenton", "lat": 40.2206, "lon": -74.7699}, {"name": "West Windsor", "lat": 40.2963, "lon": -74.6027}, {"name": "Carteret", "lat": 40.5768, "lon": -74.2279}, {"name": "Cranbury", "lat": 40.3163, "lon": -74.5127}, {"name": "Dunellen", "lat": 40.5893, "lon": -74.4718}, {"name": "East Brunswick", "lat": 40.4286, "lon": -74.419}, {"name": "Edison", "lat": 40.5187, "lon": -74.3518}, {"name": "Highland Park", "lat": 40.4987, "lon": -74.4268}, {"name": "Jamesburg", "lat": 40.3563, "lon": -74.4327}, {"name": "Metuchen", "lat": 40.5437, "lon": -74.3618}, {"name": "Middlesex", "lat": 40.5737, "lon": -74.5018}, {"name": "Monroe Twp", "lat": 40.3263, "lon": -74.4327}, {"name": "New Brunswick", "lat": 40.4862, "lon": -74.4518}, {"name": "North Brunswick", "lat": 40.4487, "lon": -74.4818}, {"name": "Old Bridge", "lat": 40.4163, "lon": -74.3527}, {"name": "Perth Amboy", "lat": 40.5068, "lon": -74.2654}, {"name": "Piscataway", "lat": 40.5537, "lon": -74.4618}, {"name": "Plainsboro", "lat": 40.3463, "lon": -74.5927}, {"name": "Sayreville", "lat": 40.4587, "lon": -74.3218}, {"name": "South Amboy", "lat": 40.4837, "lon": -74.2904}, {"name": "South Brunswick", "lat": 40.3787, "lon": -74.5318}, {"name": "South Plainfield", "lat": 40.5787, "lon": -74.4118}, {"name": "South River", "lat": 40.4487, "lon": -74.3918}, {"name": "Spotswood", "lat": 40.3926, "lon": -74.3918}, {"name": "Woodbridge", "lat": 40.5576, "lon": -74.2843}, {"name": "Aberdeen", "lat": 40.4168, "lon": -74.2257}, {"name": "Allenhurst", "lat": 40.2368, "lon": -74.0018}, {"name": "Asbury Park", "lat": 40.2204, "lon": -74.0121}, {"name": "Atlantic Highlands", "lat": 40.4068, "lon": -74.0318}, {"name": "Belmar", "lat": 40.1776, "lon": -74.0218}, {"name": "Bradley Beach", "lat": 40.2026, "lon": -74.0118}, {"name": "Colts Neck", "lat": 40.2968, "lon": -74.1718}, {"name": "Deal", "lat": 40.2526, "lon": -73.9968}, {"name": "Eatontown", "lat": 40.2868, "lon": -74.0518}, {"name": "Fair Haven", "lat": 40.3568, "lon": -74.0418}, {"name": "Farmingdale", "lat": 40.1968, "lon": -74.1618}, {"name": "Freehold", "lat": 40.2601, "lon": -74.2737}, {"name": "Hazlet", "lat": 40.4168, "lon": -74.1818}, {"name": "Highlands", "lat": 40.4068, "lon": -73.9918}, {"name": "Holmdel", "lat": 40.3768, "lon": -74.1718}, {"name": "Howell Twp", "lat": 40.1768, "lon": -74.1918}, {"name": "Keansburg", "lat": 40.4418, "lon": -74.1318}, {"name": "Keyport", "lat": 40.4318, "lon": -74.2018}, {"name": "Little Silver", "lat": 40.3368, "lon": -74.0418}, {"name": "Long Branch", "lat": 40.3043, "lon": -73.9918}, {"name": "Manalapan", "lat": 40.2768, "lon": -74.3318}, {"name": "Manasquan", "lat": 40.1268, "lon": -74.0418}, {"name": "Marlboro", "lat": 40.3168, "lon": -74.2518}, {"name": "Matawan", "lat": 40.4148, "lon": -74.2293}, {"name": "Middletown", "lat": 40.3768, "lon": -74.0818}, {"name": "Monmouth Beach", "lat": 40.3268, "lon": -73.9818}, {"name": "Neptune Twp", "lat": 40.2168, "lon": -74.0518}, {"name": "Ocean Twp", "lat": 40.2568, "lon": -74.0518}, {"name": "Oceanport", "lat": 40.3168, "lon": -74.0218}, {"name": "Red Bank", "lat": 40.3471, "lon": -74.0643}, {"name": "Rumson", "lat": 40.3668, "lon": -73.9918}, {"name": "Sea Bright", "lat": 40.3618, "lon": -73.9718}, {"name": "Sea Girt", "lat": 40.1326, "lon": -74.0318}, {"name": "Spring Lake", "lat": 40.1526, "lon": -74.0318}, {"name": "Tinton Falls", "lat": 40.2768, "lon": -74.0918}, {"name": "Union Beach", "lat": 40.4468, "lon": -74.1618}, {"name": "Upper Freehold", "lat": 40.1968, "lon": -74.4118}, {"name": "Wall Twp", "lat": 40.1568, "lon": -74.0918}, {"name": "West Long Branch", "lat": 40.2876, "lon": -74.0168}, {"name": "Boonton", "lat": 40.9057, "lon": -74.4068}, {"name": "Butler", "lat": 41.0037, "lon": -74.3418}, {"name": "Chatham", "lat": 40.7407, "lon": -74.3818}, {"name": "Chester", "lat": 40.7863, "lon": -74.6927}, {"name": "Denville", "lat": 40.8926, "lon": -74.4768}, {"name": "Dover", "lat": 40.884, "lon": -74.5576}, {"name": "East Hanover", "lat": 40.8207, "lon": -74.3468}, {"name": "Florham Park", "lat": 40.7876, "lon": -74.3868}, {"name": "Hanover", "lat": 40.8207, "lon": -74.3768}, {"name": "Jefferson Twp", "lat": 41.0007, "lon": -74.5518}, {"name": "Kinnelon", "lat": 41.0007, "lon": -74.3768}, {"name": "Lincoln Park", "lat": 40.9237, "lon": -74.3018}, {"name": "Long Hill Twp", "lat": 40.6907, "lon": -74.4618}, {"name": "Madison", "lat": 40.7593, "lon": -74.4168}, {"name": "Mine Hill", "lat": 40.8807, "lon": -74.5868}, {"name": "Montville", "lat": 40.9107, "lon": -74.3468}, {"name": "Morris Plains", "lat": 40.8276, "lon": -74.4818}, {"name": "Morris Twp", "lat": 40.8007, "lon": -74.4818}, {"name": "Morristown", "lat": 40.7968, "lon": -74.4815}, {"name": "Mount Arlington", "lat": 40.9207, "lon": -74.6368}, {"name": "Mount Olive", "lat": 40.8807, "lon": -74.7468}, {"name": "Mountain Lakes", "lat": 40.8907, "lon": -74.4318}, {"name": "Netcong", "lat": 40.897, "lon": -74.7068}, {"name": "Parsippany-Troy Hills", "lat": 40.8587, "lon": -74.4118}, {"name": "Pequannock Twp", "lat": 40.9537, "lon": -74.2968}, {"name": "Randolph", "lat": 40.8507, "lon": -74.5768}, {"name": "Riverdale", "lat": 40.9907, "lon": -74.3118}, {"name": "Rockaway", "lat": 40.9007, "lon": -74.5168}, {"name": "Roxbury", "lat": 40.8807, "lon": -74.6668}, {"name": "Washington Twp", "lat": 40.7707, "lon": -74.4518}, {"name": "Wharton", "lat": 40.894, "lon": -74.5818}, {"name": "Barnegat", "lat": 39.7526, "lon": -74.229}, {"name": "Barnegat Light", "lat": 39.7568, "lon": -74.1118}, {"name": "Bay Head", "lat": 40.0726, "lon": -74.0518}, {"name": "Beach Haven", "lat": 39.5626, "lon": -74.2418}, {"name": "Beachwood", "lat": 39.9276, "lon": -74.1918}, {"name": "Berkeley Twp", "lat": 39.9026, "lon": -74.2218}, {"name": "Brick", "lat": 40.0576, "lon": -74.1368}, {"name": "Harvey Cedars", "lat": 39.7026, "lon": -74.1418}, {"name": "Island Heights", "lat": 39.9426, "lon": -74.1518}, {"name": "Jackson Twp", "lat": 40.0926, "lon": -74.3518}, {"name": "Lacey Twp", "lat": 39.8526, "lon": -74.2818}, {"name": "Lakehurst", "lat": 40.0126, "lon": -74.3118}, {"name": "Lakewood", "lat": 40.0837, "lon": -74.2176}, {"name": "Lavallette", "lat": 39.9726, "lon": -74.0718}, {"name": "Little Egg Harbor", "lat": 39.6226, "lon": -74.3418}, {"name": "Long Beach Twp", "lat": 39.6526, "lon": -74.1918}, {"name": "Manchester Twp", "lat": 39.9626, "lon": -74.3718}, {"name": "Mantoloking", "lat": 40.0326, "lon": -74.0518}, {"name": "Ocean Gate", "lat": 39.9276, "lon": -74.1318}, {"name": "Ocean Twp", "lat": 39.9226, "lon": -74.2918}, {"name": "Pine Beach", "lat": 39.9326, "lon": -74.1718}, {"name": "Plumsted Twp", "lat": 40.0526, "lon": -74.4718}, {"name": "Point Pleasant", "lat": 40.0826, "lon": -74.0718}, {"name": "Point Pleasant Beach", "lat": 40.0926, "lon": -74.0518}, {"name": "Seaside Heights", "lat": 39.9446, "lon": -74.0718}, {"name": "Seaside Park", "lat": 39.9276, "lon": -74.0768}, {"name": "Ship Bottom", "lat": 39.6526, "lon": -74.1818}, {"name": "South Toms River", "lat": 39.9426, "lon": -74.2018}, {"name": "Stafford Twp", "lat": 39.7026, "lon": -74.2618}, {"name": "Surf City", "lat": 39.6626, "lon": -74.1718}, {"name": "Toms River", "lat": 39.9537, "lon": -74.1979}, {"name": "Tuckerton", "lat": 39.6026, "lon": -74.3418}, {"name": "Bloomingdale", "lat": 41.0523, "lon": -74.3268}, {"name": "Clifton", "lat": 40.8584, "lon": -74.1638}, {"name": "Haledon", "lat": 40.9376, "lon": -74.1868}, {"name": "Hawthorne", "lat": 40.9493, "lon": -74.1537}, {"name": "Little Falls", "lat": 40.8826, "lon": -74.2098}, {"name": "North Haledon", "lat": 40.9576, "lon": -74.1868}, {"name": "Passaic", "lat": 40.8568, "lon": -74.1286}, {"name": "Paterson", "lat": 40.9168, "lon": -74.1718}, {"name": "Pompton Lakes", "lat": 41.0037, "lon": -74.2918}, {"name": "Ringwood", "lat": 41.1137, "lon": -74.2618}, {"name": "Totowa", "lat": 40.9076, "lon": -74.2268}, {"name": "Wanaque", "lat": 41.0437, "lon": -74.2918}, {"name": "Wayne", "lat": 40.9493, "lon": -74.2768}, {"name": "West Milford", "lat": 41.1037, "lon": -74.3818}, {"name": "Woodland Park", "lat": 40.8876, "lon": -74.1968}, {"name": "Alloway Twp", "lat": 39.5512, "lon": -75.334}, {"name": "Carneys Point", "lat": 39.7112, "lon": -75.474}, {"name": "Elmer", "lat": 39.5912, "lon": -75.169}, {"name": "Lower Alloways Creek", "lat": 39.4612, "lon": -75.424}, {"name": "Mannington Twp", "lat": 39.5812, "lon": -75.374}, {"name": "Oldmans Twp", "lat": 39.7512, "lon": -75.404}, {"name": "Penns Grove", "lat": 39.7293, "lon": -75.4679}, {"name": "Pennsville", "lat": 39.6612, "lon": -75.504}, {"name": "Pilesgrove Twp", "lat": 39.6612, "lon": -75.324}, {"name": "Pittsgrove Twp", "lat": 39.5312, "lon": -75.134}, {"name": "Quinton Twp", "lat": 39.4912, "lon": -75.354}, {"name": "Salem", "lat": 39.5712, "lon": -75.4679}, {"name": "Woodstown", "lat": 39.6512, "lon": -75.329}, {"name": "Bedminster", "lat": 40.6807, "lon": -74.6527}, {"name": "Bernards Twp", "lat": 40.6707, "lon": -74.5827}, {"name": "Bernardsville", "lat": 40.7193, "lon": -74.5718}, {"name": "Bound Brook", "lat": 40.5687, "lon": -74.5318}, {"name": "Branchburg", "lat": 40.5707, "lon": -74.6727}, {"name": "Bridgewater", "lat": 40.5931, "lon": -74.6296}, {"name": "Far Hills", "lat": 40.6907, "lon": -74.6327}, {"name": "Franklin Twp", "lat": 40.4707, "lon": -74.5427}, {"name": "Green Brook", "lat": 40.6007, "lon": -74.4827}, {"name": "Hillsborough", "lat": 40.5107, "lon": -74.6327}, {"name": "Manville", "lat": 40.5387, "lon": -74.5827}, {"name": "Montgomery Twp", "lat": 40.4207, "lon": -74.6727}, {"name": "North Plainfield", "lat": 40.6307, "lon": -74.4327}, {"name": "Peapack-Gladstone", "lat": 40.7207, "lon": -74.6527}, {"name": "Raritan", "lat": 40.5687, "lon": -74.6318}, {"name": "Rocky Hill", "lat": 40.3907, "lon": -74.6327}, {"name": "Somerville", "lat": 40.5743, "lon": -74.6096}, {"name": "South Bound Brook", "lat": 40.5537, "lon": -74.5218}, {"name": "Warren Twp", "lat": 40.6307, "lon": -74.5127}, {"name": "Watchung", "lat": 40.6407, "lon": -74.4627}, {"name": "Andover Twp", "lat": 40.9963, "lon": -74.7227}, {"name": "Branchville", "lat": 41.1463, "lon": -74.7527}, {"name": "Byram Twp", "lat": 40.9563, "lon": -74.7027}, {"name": "Frankford Twp", "lat": 41.1063, "lon": -74.7427}, {"name": "Franklin", "lat": 41.1218, "lon": -74.5818}, {"name": "Green Twp", "lat": 40.9163, "lon": -74.7527}, {"name": "Hamburg", "lat": 41.1543, "lon": -74.5768}, {"name": "Hampton Twp", "lat": 41.0963, "lon": -74.6227}, {"name": "Hardyston Twp", "lat": 41.0763, "lon": -74.5627}, {"name": "Hopatcong", "lat": 40.9326, "lon": -74.6593}, {"name": "Lafayette Twp", "lat": 41.0863, "lon": -74.6827}, {"name": "Newton", "lat": 41.0584, "lon": -74.7526}, {"name": "Ogdensburg", "lat": 41.0818, "lon": -74.5918}, {"name": "Sparta", "lat": 41.0393, "lon": -74.6268}, {"name": "Stanhope", "lat": 40.904, "lon": -74.7068}, {"name": "Sussex", "lat": 41.2098, "lon": -74.6076}, {"name": "Vernon Twp", "lat": 41.2163, "lon": -74.4927}, {"name": "Wantage Twp", "lat": 41.2363, "lon": -74.6427}, {"name": "Clark", "lat": 40.6193, "lon": -74.3068}, {"name": "Cranford", "lat": 40.6576, "lon": -74.2968}, {"name": "Elizabeth", "lat": 40.6639, "lon": -74.2107}, {"name": "Fanwood", "lat": 40.6418, "lon": -74.3868}, {"name": "Garwood", "lat": 40.6518, "lon": -74.3218}, {"name": "Hillside", "lat": 40.6976, "lon": -74.2268}, {"name": "Kenilworth", "lat": 40.6768, "lon": -74.2868}, {"name": "Linden", "lat": 40.622, "lon": -74.2446}, {"name": "Mountainside", "lat": 40.6726, "lon": -74.3568}, {"name": "New Providence", "lat": 40.6976, "lon": -74.4018}, {"name": "Plainfield", "lat": 40.6337, "lon": -74.4074}, {"name": "Rahway", "lat": 40.6076, "lon": -74.2776}, {"name": "Roselle", "lat": 40.6526, "lon": -74.2618}, {"name": "Roselle Park", "lat": 40.6646, "lon": -74.2706}, {"name": "Scotch Plains", "lat": 40.6559, "lon": -74.3893}, {"name": "Springfield Twp", "lat": 40.6976, "lon": -74.3218}, {"name": "Summit", "lat": 40.7159, "lon": -74.3643}, {"name": "Union Twp", "lat": 40.6976, "lon": -74.2618}, {"name": "Westfield", "lat": 40.6589, "lon": -74.3468}, {"name": "Alpha", "lat": 40.6663, "lon": -75.1627}, {"name": "Belvidere", "lat": 40.8293, "lon": -75.0779}, {"name": "Blairstown", "lat": 41.0063, "lon": -74.9627}, {"name": "Franklin Twp", "lat": 40.7663, "lon": -75.0627}, {"name": "Hackettstown", "lat": 40.8529, "lon": -74.8293}, {"name": "Hardwick Twp", "lat": 41.0463, "lon": -74.9927}, {"name": "Hope Twp", "lat": 40.9163, "lon": -74.9627}, {"name": "Independence Twp", "lat": 40.8563, "lon": -74.8827}, {"name": "Knowlton Twp", "lat": 41.0063, "lon": -75.0527}, {"name": "Lopatcong", "lat": 40.6963, "lon": -75.1427}, {"name": "Mansfield Twp", "lat": 40.7963, "lon": -74.9527}, {"name": "Oxford Twp", "lat": 40.8063, "lon": -75.0027}, {"name": "Phillipsburg", "lat": 40.6937, "lon": -75.1896}, {"name": "Pohatcong Twp", "lat": 40.7263, "lon": -75.1327}, {"name": "Washington", "lat": 40.758, "lon": -74.9793}, {"name": "Washington Twp", "lat": 40.7763, "lon": -74.9827}, {"name": "White Twp", "lat": 40.7763, "lon": -75.0727}];
-
-// Sort alphabetically
-TOWNS.sort((a, b) => a.name.localeCompare(b.name));
-
-let forecastCache = {};
 let selectedTown = null;
+let forecastCache = {};
+let currentMarker = null;
+let map, countyLayer;
 let highlightedIndex = -1;
+let requestId = 0;
 
+// ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
-  fetchAlerts();
+  initMap();
   setupSearch();
-  setupMapClick();
+  fetchAlerts();
 });
+
+// ── LEAFLET MAP ──
+function initMap() {
+  map = L.map('map', {
+    zoomControl: false,
+    attributionControl: false,
+    zoomSnap: 0.1,
+    minZoom: 7, maxZoom: 14
+  }).setView([40.07, -74.4], 7.8);
+
+  // Standard OSM tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: ''
+  }).addTo(map);
+
+  // County boundaries
+  countyLayer = L.geoJSON(COUNTIES, {
+    style: {
+      color: '#4A6A80',
+      weight: 2,
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      opacity: 0.7
+    }
+  }).addTo(map);
+
+  // County labels - use short names for small counties
+  const COUNTY_SHORT = {
+    'ATLANTIC':'Atlantic','BERGEN':'Bergen','BURLINGTON':'Burlington',
+    'CAMDEN':'Camden','CAPE MAY':'Cape May','CUMBERLAND':'Cumberland',
+    'ESSEX':'Essex','GLOUCESTER':'Gloucester','HUDSON':'Hudson',
+    'HUNTERDON':'Hunterdon','MERCER':'Mercer','MIDDLESEX':'Middlesex',
+    'MONMOUTH':'Monmouth','MORRIS':'Morris','OCEAN':'Ocean',
+    'PASSAIC':'Passaic','SALEM':'Salem','SOMERSET':'Somerset',
+    'SUSSEX':'Sussex','UNION':'Union','WARREN':'Warren'
+  };
+  COUNTIES.features.forEach(feat => {
+    const geom = L.geoJSON(feat);
+    const center = geom.getBounds().getCenter();
+    const name = COUNTY_SHORT[feat.properties.name] || feat.properties.name;
+    L.marker(center, {
+      icon: L.divIcon({
+        className: 'county-label',
+        html: name,
+        iconSize: null
+      }),
+      interactive: false
+    }).addTo(map);
+  });
+
+  // Zoom control bottom-right
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+  // Click handler: use NWS relativeLocation for naming
+  map.on('click', function(e) {
+    const lat = e.latlng.lat, lon = e.latlng.lng;
+    // Quick bounds check - skip clicks way outside NJ
+    if (lat < 38.8 || lat > 41.4 || lon < -75.6 || lon > -73.8) return;
+    selectByCoords(lat, lon);
+  });
+}
 
 // ── SEARCH ──
 function setupSearch() {
@@ -391,9 +374,12 @@ function setupSearch() {
     if (!matches.length) { results.classList.remove('open'); return; }
     results.innerHTML = matches.map((t, i) => {
       const idx = t.name.toLowerCase().indexOf(q);
-      const highlighted = t.name.substring(0, idx) + '<mark>' + t.name.substring(idx, idx + q.length) + '</mark>' + t.name.substring(idx + q.length);
-      return '<div class="search-result-item" data-index="' + i + '" onclick="selectTownByName(\'' + t.name.replace(/'/g, "\\'") + '\')">' + highlighted + '</div>';
+      const hl = t.name.substring(0,idx) + '<mark>' + t.name.substring(idx, idx+q.length) + '</mark>' + t.name.substring(idx+q.length);
+      return '<div class="search-result-item" data-index="'+i+'" data-name="'+t.name.replace(/"/g,'&quot;')+'">'+hl+'</div>';
     }).join('');
+    results.querySelectorAll('.search-result-item').forEach(el => {
+      el.addEventListener('click', () => selectTownByName(el.dataset.name));
+    });
     results.classList.add('open');
   });
 
@@ -402,14 +388,14 @@ function setupSearch() {
     if (!items.length) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
-      items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightedIndex));
-      items[highlightedIndex].scrollIntoView({ block: 'nearest' });
+      highlightedIndex = Math.min(highlightedIndex+1, items.length-1);
+      items.forEach((el,i) => el.classList.toggle('highlighted', i===highlightedIndex));
+      items[highlightedIndex].scrollIntoView({block:'nearest'});
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      highlightedIndex = Math.max(highlightedIndex - 1, 0);
-      items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightedIndex));
-      items[highlightedIndex].scrollIntoView({ block: 'nearest' });
+      highlightedIndex = Math.max(highlightedIndex-1, 0);
+      items.forEach((el,i) => el.classList.toggle('highlighted', i===highlightedIndex));
+      items[highlightedIndex].scrollIntoView({block:'nearest'});
     } else if (e.key === 'Enter' && highlightedIndex >= 0) {
       e.preventDefault();
       items[highlightedIndex].click();
@@ -426,216 +412,269 @@ function selectTownByName(name) {
   if (town) selectTown(town);
 }
 
+// ── SELECT TOWN (from search) ──
 function selectTown(town) {
-  selectedTown = town;
+  selectedTown = { name: town.name, lat: town.lat, lon: town.lon };
   document.getElementById('searchInput').value = town.name;
   document.getElementById('searchResults').classList.remove('open');
-  document.getElementById('forecastEmpty').style.display = 'none';
-  document.getElementById('forecastContent').style.display = 'block';
-  document.getElementById('forecastLocName').textContent = town.name;
-
-  // Place marker on map
-  placeMarker(town);
-
-  // Fetch forecast
-  const cacheKey = town.lat + ',' + town.lon;
-  if (forecastCache[cacheKey]) {
-    renderForecast(forecastCache[cacheKey]);
-  } else {
-    document.getElementById('forecastCurrent').innerHTML = '<span class="loading-spinner"></span> Loading forecast...';
-    document.getElementById('forecastDays').innerHTML = '';
-    fetchForecastFor(town);
-  }
+  showForecastPanel(town.name);
+  placeMarker(town.lat, town.lon);
+  loadForecast(town.lat, town.lon, town.name);
 }
 
-function placeMarker(town) {
-  const [mx, my] = projectToSVG(town.lon, town.lat);
-  const g = document.getElementById('markerGroup');
-  g.innerHTML = '';
+// ── SELECT BY COORDS (from map click, uses NWS relativeLocation) ──
+async function selectByCoords(lat, lon) {
+  const myReq = ++requestId;
+  showForecastPanel('Loading...');
+  placeMarker(lat, lon);
+  document.getElementById('forecastCurrent').innerHTML = '<span class="loading-spinner"></span> Locating...';
+  document.getElementById('forecastDays').innerHTML = '';
+  hideHourly();
 
-  // Pin drop shadow
-  const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-  shadow.setAttribute('cx', mx);
-  shadow.setAttribute('cy', my + 14);
-  shadow.setAttribute('rx', '6');
-  shadow.setAttribute('ry', '2');
-  shadow.setAttribute('fill', 'rgba(0,0,0,0.2)');
-  g.appendChild(shadow);
-
-  // Pin shape
-  const pin = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  pin.setAttribute('d', 'M' + mx + ',' + (my + 10) + ' C' + (mx-4) + ',' + (my+2) + ' ' + (mx-8) + ',' + (my-4) + ' ' + (mx-8) + ',' + (my-8) +
-    ' A8,8 0 1,1 ' + (mx+8) + ',' + (my-8) +
-    ' C' + (mx+8) + ',' + (my-4) + ' ' + (mx+4) + ',' + (my+2) + ' ' + mx + ',' + (my+10) + 'Z');
-  pin.classList.add('marker-pin');
-  g.appendChild(pin);
-
-  // White dot
-  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  dot.setAttribute('cx', mx);
-  dot.setAttribute('cy', my - 8);
-  dot.setAttribute('r', '3');
-  dot.setAttribute('fill', 'white');
-  g.appendChild(dot);
-
-  // Label
-  const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  label.classList.add('marker-label-text');
-  label.setAttribute('x', mx);
-  label.setAttribute('y', my + 24);
-  label.textContent = town.name;
-  g.appendChild(label);
-}
-
-// ── MAP CLICK: find nearest town ──
-function setupMapClick() {
-  const svg = document.getElementById('njMap');
-  const outline = document.getElementById('njOutline');
-
-  svg.addEventListener('click', (e) => {
-    if (e.target.closest('.search-wrapper')) return;
-    const rect = svg.getBoundingClientRect();
-    const svgX = (e.clientX - rect.left) / rect.width * 340;
-    const svgY = (e.clientY - rect.top) / rect.height * 560;
-
-    // Convert SVG coords back to lon/lat
-    const lon = (svgX - PROJ.off_x) / (PROJ.cos_lat * PROJ.scale) + PROJ.min_lon;
-    const lat = PROJ.max_lat - (svgY - PROJ.off_y) / PROJ.scale;
-
-    // Find nearest town
-    let nearest = null, minDist = Infinity;
-    TOWNS.forEach(t => {
-      const d = Math.pow(t.lat - lat, 2) + Math.pow((t.lon - lon) * PROJ.cos_lat, 2);
-      if (d < minDist) { minDist = d; nearest = t; }
-    });
-    if (nearest) selectTown(nearest);
-  });
-}
-
-// ── FORECAST ──
-async function fetchForecastFor(town) {
   try {
-    const hdr = { 'User-Agent': 'NJcom-Weather/1.0 (news@njadvancemedia.com)', 'Accept': 'application/geo+json' };
-    const ptRes = await fetch('https://api.weather.gov/points/' + town.lat + ',' + town.lon, { headers: hdr });
-    if (!ptRes.ok) throw new Error('Point API ' + ptRes.status);
+    const ptRes = await fetch('https://api.weather.gov/points/'+lat.toFixed(4)+','+lon.toFixed(4));
+    if (myReq !== requestId) return;
+    if (!ptRes.ok) throw new Error('NWS returned '+ptRes.status);
     const ptData = await ptRes.json();
-    const fcRes = await fetch(ptData.properties.forecast, { headers: hdr });
-    if (!fcRes.ok) throw new Error('Forecast API ' + fcRes.status);
-    const fcData = await fcRes.json();
-    const periods = fcData.properties.periods;
-    const days = []; let i = 0, dc = 0;
-    while (i < periods.length && dc < 3) {
-      const p = periods[i];
-      if (p.isDaytime) {
-        const n = periods[i+1];
-        days.push({ name: p.name, high: p.temperature, low: n ? n.temperature : null,
-          shortForecast: p.shortForecast, windSpeed: p.windSpeed, windDirection: p.windDirection });
-        dc++; i += 2;
-      } else {
-        if (dc === 0) {
-          days.push({ name: p.name, high: null, low: p.temperature,
-            shortForecast: p.shortForecast, windSpeed: p.windSpeed, windDirection: p.windDirection });
-          dc++;
-        }
-        i++;
-      }
-    }
-    const result = { periods, days };
-    forecastCache[town.lat + ',' + town.lon] = result;
-    if (selectedTown && selectedTown.name === town.name) {
-      renderForecast(result);
-      document.getElementById('updateTime').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    }
-  } catch (err) {
-    console.error('Forecast error ' + town.name, err);
-    if (selectedTown && selectedTown.name === town.name)
-      document.getElementById('forecastCurrent').textContent = 'Unable to load forecast. Try refreshing.';
+    const props = ptData.properties || {};
+    const rel = props.relativeLocation?.properties;
+    const locName = rel ? rel.city + ', ' + rel.state : 'Selected Location';
+
+    selectedTown = { name: locName, lat, lon };
+    document.getElementById('forecastLocName').textContent = locName;
+    document.getElementById('searchInput').value = rel ? rel.city : '';
+
+    await fetchForecasts(props.forecast, props.forecastHourly, lat, lon, locName, myReq);
+  } catch(err) {
+    if (myReq !== requestId) return;
+    showError('Could not load forecast for this location. NWS may be temporarily unavailable.', lat, lon);
   }
+}
+
+function showForecastPanel(name) {
+  const panel = document.getElementById('forecastPanel');
+  panel.classList.remove('collapsed');
+  document.getElementById('forecastLocName').textContent = name;
+  setTimeout(() => map.invalidateSize(), 350);
+}
+
+function placeMarker(lat, lon) {
+  if (currentMarker) map.removeLayer(currentMarker);
+  currentMarker = L.marker([lat, lon], {
+    icon: L.divIcon({ className: 'town-marker', iconSize: [14, 14], iconAnchor: [7, 7] })
+  }).addTo(map);
+}
+
+function hideHourly() {
+  document.getElementById('hourlyToggle').style.display = 'none';
+  document.getElementById('hourlySection').innerHTML = '';
+  document.getElementById('hourlySection').classList.remove('open');
+  const toggle = document.getElementById('hourlyToggle');
+  toggle.classList.remove('open');
+  toggle.innerHTML = 'Show hourly forecast <span class="arrow">▼</span>';
+}
+
+// ── LOAD FORECAST (from search, needs points lookup first) ──
+async function loadForecast(lat, lon, name) {
+  const myReq = ++requestId;
+  const key = lat+','+lon;
+  if (forecastCache[key]) {
+    renderForecast(forecastCache[key]);
+    return;
+  }
+
+  document.getElementById('forecastCurrent').innerHTML = '<span class="loading-spinner"></span> Loading forecast...';
+  document.getElementById('forecastDays').innerHTML = '';
+  hideHourly();
+
+  try {
+    const ptRes = await fetch('https://api.weather.gov/points/'+lat+','+lon);
+    if (myReq !== requestId) return;
+    if (!ptRes.ok) throw new Error('NWS returned '+ptRes.status);
+    const ptData = await ptRes.json();
+    const props = ptData.properties || {};
+    await fetchForecasts(props.forecast, props.forecastHourly, lat, lon, name, myReq);
+  } catch(err) {
+    if (myReq !== requestId) return;
+    showError('Could not load forecast. NWS may be temporarily unavailable.', lat, lon, name);
+  }
+}
+
+// ── FETCH BOTH FORECASTS ──
+async function fetchForecasts(forecastUrl, hourlyUrl, lat, lon, name, myReq) {
+  if (!forecastUrl) throw new Error('No forecast URL from NWS');
+
+  // Fetch daily and hourly in parallel
+  const [fcRes, hrRes] = await Promise.all([
+    fetch(forecastUrl),
+    hourlyUrl ? fetch(hourlyUrl).catch(() => null) : Promise.resolve(null)
+  ]);
+
+  if (myReq !== requestId) return;
+  if (!fcRes.ok) throw new Error('Forecast API '+fcRes.status);
+
+  const fcData = await fcRes.json();
+  const periods = fcData.properties.periods;
+
+  // Parse 3-day
+  const days = []; let i=0, dc=0;
+  while (i < periods.length && dc < 3) {
+    const p = periods[i];
+    if (p.isDaytime) {
+      const n = periods[i+1];
+      days.push({ name:p.name, high:p.temperature, low:n?n.temperature:null,
+        shortForecast:p.shortForecast, windSpeed:p.windSpeed, windDirection:p.windDirection });
+      dc++; i+=2;
+    } else {
+      if (dc===0) {
+        days.push({ name:p.name, high:null, low:p.temperature,
+          shortForecast:p.shortForecast, windSpeed:p.windSpeed, windDirection:p.windDirection });
+        dc++;
+      }
+      i++;
+    }
+  }
+
+  // Parse hourly
+  let hourlyPeriods = [];
+  if (hrRes && hrRes.ok) {
+    try {
+      const hrData = await hrRes.json();
+      hourlyPeriods = (hrData.properties?.periods || []).slice(0, 12);
+    } catch(e) { /* hourly is optional */ }
+  }
+
+  const result = { periods, days, hourlyPeriods };
+  forecastCache[lat+','+lon] = result;
+
+  if (myReq === requestId) renderForecast(result);
+}
+
+// ── ERROR DISPLAY WITH RETRY ──
+function showError(msg, lat, lon, name) {
+  document.getElementById('forecastCurrent').innerHTML = '';
+  document.getElementById('forecastDays').innerHTML =
+    '<div class="forecast-error" style="grid-column:1/-1;">'
+    + msg
+    + '<br><button class="retry-btn" onclick="retryForecast()">↻ Retry</button>'
+    + '</div>';
+  hideHourly();
+  // Store for retry
+  selectedTown = { name: name || 'Location', lat, lon };
+}
+
+function retryForecast() {
+  if (selectedTown) loadForecast(selectedTown.lat, selectedTown.lon, selectedTown.name);
 }
 
 function getWeatherEmoji(s) {
-  s = (s || '').toLowerCase();
-  if (s.includes('thunder') || s.includes('tstorm')) return '⛈️';
-  if (s.includes('snow') || s.includes('blizzard')) return '🌨️';
-  if (s.includes('ice') || s.includes('sleet') || s.includes('freezing')) return '🧊';
-  if (s.includes('rain') && !s.includes('chance')) return '🌧️';
-  if (s.includes('showers') || s.includes('drizzle')) return '🌦️';
-  if ((s.includes('chance') || s.includes('slight')) && (s.includes('rain') || s.includes('showers'))) return '🌦️';
-  if (s.includes('fog') || s.includes('haze') || s.includes('mist')) return '🌫️';
-  if (s.includes('overcast') || s.includes('cloud')) return '☁️';
-  if (s.includes('partly') || s.includes('mostly sunny')) return '⛅';
-  if (s.includes('sunny') || s.includes('clear')) return '☀️';
+  s = (s||'').toLowerCase();
+  if (s.includes('thunder')||s.includes('tstorm')) return '⛈️';
+  if (s.includes('snow')||s.includes('blizzard')) return '🌨️';
+  if (s.includes('ice')||s.includes('sleet')||s.includes('freezing')) return '🧊';
+  if (s.includes('rain')&&!s.includes('chance')) return '🌧️';
+  if (s.includes('showers')||s.includes('drizzle')) return '🌦️';
+  if ((s.includes('chance')||s.includes('slight'))&&(s.includes('rain')||s.includes('showers'))) return '🌦️';
+  if (s.includes('fog')||s.includes('haze')||s.includes('mist')) return '🌫️';
+  if (s.includes('overcast')||s.includes('cloud')) return '☁️';
+  if (s.includes('partly')||s.includes('mostly sunny')) return '⛅';
+  if (s.includes('sunny')||s.includes('clear')) return '☀️';
   if (s.includes('wind')) return '💨';
   return '🌤️';
 }
 
 function renderForecast(data) {
-  const { days, periods } = data;
-  if (!days || !days.length) { document.getElementById('forecastCurrent').textContent = 'No data available.'; return; }
-  const f = periods[0], em = getWeatherEmoji(f.shortForecast);
+  const {days, periods, hourlyPeriods} = data;
+  if (!days||!days.length) { document.getElementById('forecastCurrent').textContent='No data available.'; return; }
+  const f=periods[0], em=getWeatherEmoji(f.shortForecast);
   document.getElementById('forecastCurrent').innerHTML =
-    em + ' Now: ' + f.shortForecast + ' &middot; ' + f.temperature + '&deg;' + f.temperatureUnit + ' &middot; Wind ' + f.windSpeed + ' ' + f.windDirection;
-  const c = document.getElementById('forecastDays'); c.innerHTML = '';
-  days.forEach((d, idx) => {
+    em+' Now: '+f.shortForecast+' &middot; '+f.temperature+'&deg;'+f.temperatureUnit+' &middot; Wind '+f.windSpeed+' '+f.windDirection;
+  const c = document.getElementById('forecastDays'); c.innerHTML='';
+  days.forEach((d,idx) => {
     const emoji = getWeatherEmoji(d.shortForecast);
     const card = document.createElement('div');
     card.className = 'forecast-day-card';
-    const hs = d.high !== null ? d.high + '&deg;' : '--';
-    const ls = d.low !== null ? d.low + '&deg;' : '--';
-    const lbl = idx === 0 ? (d.name.toLowerCase().includes('tonight') ? 'TONIGHT' : 'TODAY')
-      : (d.name.length > 9 ? d.name.substring(0,9) : d.name);
-    card.innerHTML = '<div class="day-label">' + lbl + '</div>'
-      + '<div class="day-icon">' + emoji + '</div>'
-      + '<div class="day-temps"><span class="day-high">' + hs + '</span>'
-      + '<span class="day-low">' + (d.high !== null && d.low !== null ? '/ ' + ls : (d.low !== null ? ls : '')) + '</span></div>'
-      + '<div class="day-desc">' + d.shortForecast + '</div>'
-      + '<div class="day-wind">' + d.windSpeed + ' ' + d.windDirection + '</div>';
+    const hs = d.high!==null ? d.high+'&deg;' : '--';
+    const ls = d.low!==null ? d.low+'&deg;' : '--';
+    const lbl = idx===0 ? (d.name.toLowerCase().includes('tonight')?'TONIGHT':'TODAY')
+      : (d.name.length>9 ? d.name.substring(0,9) : d.name);
+    card.innerHTML = '<div class="day-label">'+lbl+'</div>'
+      +'<div class="day-icon">'+emoji+'</div>'
+      +'<div class="day-temps"><span class="day-high">'+hs+'</span>'
+      +'<span class="day-low">'+(d.high!==null&&d.low!==null?'/ '+ls:(d.low!==null?ls:''))+'</span></div>'
+      +'<div class="day-desc">'+d.shortForecast+'</div>'
+      +'<div class="day-wind">'+d.windSpeed+' '+d.windDirection+'</div>';
     c.appendChild(card);
   });
+
+  // Hourly section
+  const toggle = document.getElementById('hourlyToggle');
+  const section = document.getElementById('hourlySection');
+  if (hourlyPeriods && hourlyPeriods.length) {
+    toggle.style.display = 'flex';
+    toggle.classList.remove('open');
+    toggle.innerHTML = 'Show hourly forecast <span class="arrow">▼</span>';
+    section.classList.remove('open');
+    section.innerHTML = hourlyPeriods.map(p => {
+      const time = p.startTime ? new Date(p.startTime).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : '';
+      const temp = p.temperature != null ? p.temperature+'°' : '—';
+      const emoji = getWeatherEmoji(p.shortForecast);
+      const wind = [p.windSpeed, p.windDirection].filter(Boolean).join(' ');
+      return '<div class="hourly-row">'
+        +'<span class="hourly-time">'+time+'</span>'
+        +'<span class="hourly-emoji">'+emoji+'</span>'
+        +'<span class="hourly-temp">'+temp+'</span>'
+        +'<span class="hourly-desc">'+(p.shortForecast||'')+'</span>'
+        +'<span class="hourly-wind">'+wind+'</span>'
+        +'</div>';
+    }).join('');
+  } else {
+    toggle.style.display = 'none';
+    section.innerHTML = '';
+  }
+
+  // Re-invalidate map after forecast renders
+  setTimeout(() => map.invalidateSize(), 100);
+}
+
+function toggleHourly() {
+  const toggle = document.getElementById('hourlyToggle');
+  const section = document.getElementById('hourlySection');
+  const isOpen = section.classList.toggle('open');
+  toggle.classList.toggle('open');
+  toggle.innerHTML = (isOpen ? 'Hide hourly forecast' : 'Show hourly forecast') + ' <span class="arrow">▼</span>';
+  setTimeout(() => map.invalidateSize(), 100);
 }
 
 // ── ALERTS ──
 async function fetchAlerts() {
   try {
-    const res = await fetch('https://api.weather.gov/alerts/active?area=NJ', {
-      headers: { 'User-Agent': 'NJcom-Weather/1.0 (news@njadvancemedia.com)', 'Accept': 'application/geo+json' }
-    });
-    if (!res.ok) throw new Error('Alerts API ' + res.status);
+    const res = await fetch('https://api.weather.gov/alerts/active?area=NJ');
+    if (!res.ok) throw new Error('Alerts API '+res.status);
     const data = await res.json();
-    const alerts = (data.features || []).map(f => f.properties);
+    const alerts = (data.features||[]).map(f=>f.properties);
     if (!alerts.length) { document.getElementById('alertsBanner').classList.remove('active'); return; }
     const banner = document.getElementById('alertsBanner');
     banner.classList.add('active');
-    const hasSevere = alerts.some(a => ['Extreme','Severe'].includes(a.severity));
-    const hasWarning = alerts.some(a => a.event && a.event.toLowerCase().includes('warning'));
-    const hasWatch = alerts.some(a => a.event && a.event.toLowerCase().includes('watch'));
+    const hasSevere = alerts.some(a=>['Extreme','Severe'].includes(a.severity));
+    const hasWarning = alerts.some(a=>a.event&&a.event.toLowerCase().includes('warning'));
+    const hasWatch = alerts.some(a=>a.event&&a.event.toLowerCase().includes('watch'));
     banner.className = 'alerts-banner active';
-    if (!hasSevere && !hasWarning) {
+    if (!hasSevere&&!hasWarning) {
       if (hasWatch) banner.classList.add('alert-severity-watch');
       else banner.classList.add('alert-severity-advisory');
     }
-    document.getElementById('alertText').textContent = alerts[0].event || 'Weather Alert';
-    document.getElementById('alertCount').textContent = alerts.length > 1 ? alerts.length + ' alerts' : '1 alert';
-    document.getElementById('alertsDetail').innerHTML = alerts.map(a =>
-      '<div class="alert-item"><div class="alert-item-title">⚠ ' + (a.event||'Alert') + '</div>'
-      + '<div class="alert-item-areas">' + (a.areaDesc||'') + '</div>'
-      + '<div class="alert-item-desc">' + (a.description ? a.description.substring(0,280) + (a.description.length>280?'...':'') : '') + '</div></div>'
+    document.getElementById('alertText').textContent = alerts[0].event||'Weather Alert';
+    document.getElementById('alertCount').textContent = alerts.length>1?alerts.length+' alerts':'1 alert';
+    document.getElementById('alertsDetail').innerHTML = alerts.map(a=>
+      '<div class="alert-item"><div class="alert-item-title">⚠ '+(a.event||'Alert')+'</div>'
+      +'<div class="alert-item-areas">'+(a.areaDesc||'')+'</div>'
+      +'<div class="alert-item-desc">'+(a.description?a.description.substring(0,280)+(a.description.length>280?'...':''):'')+'</div></div>'
     ).join('');
-  } catch (err) { console.error('Alerts error:', err); }
+  } catch(err) { console.error('Alerts error:',err); }
 }
 
 function toggleAlerts() { document.getElementById('alertsDetail').classList.toggle('open'); }
-
-function refreshForecast() {
-  if (selectedTown) {
-    const key = selectedTown.lat + ',' + selectedTown.lon;
-    delete forecastCache[key];
-    document.getElementById('forecastCurrent').innerHTML = '<span class="loading-spinner"></span> Refreshing...';
-    document.getElementById('forecastDays').innerHTML = '';
-    fetchForecastFor(selectedTown);
-  }
-  fetchAlerts();
-}
 </script>
 </body>
 </html>
