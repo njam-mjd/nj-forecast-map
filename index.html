@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NJ Weather Forecast Map | NJ.com</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --nj-charcoal: #1B1B1B;
+    --nj-dark: #222233;
+    --nj-green: #84c341;
+    --nj-green-dim: #6ba332;
+    --nj-orange: #FF6B35;
+    --nj-red: #E8333A;
+    --nj-white: #FFFFFF;
+    --nj-gray: #8A8FA0;
+    --nj-border: #2E2E42;
+    --nj-card: #262638;
+    --nj-map-bg: #CADAE8;
+    --nj-map-land: #E8EDF3;
+    --radius: 8px;
+  }
+  body {
+    font-family: 'Libre Franklin', Arial, sans-serif;
+    background: var(--nj-charcoal);
+    color: var(--nj-white);
+    line-height: 1.4;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  .widget-container {
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--nj-dark);
+    min-height: 100dvh;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: #555;
+    border-bottom: 3px solid var(--nj-green);
+  }
+  .header-logo img { height: 32px; width: auto; display: block; }
+  .header-right { display: flex; align-items: center; gap: 6px; }
+  .header-weather-icon { font-size: 16px; }
+  .header-title {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--nj-white); opacity: 0.85;
+  }
+
+  /* ALERTS */
+  .alerts-banner {
+    display: none; background: var(--nj-red);
+    color: var(--nj-white); cursor: pointer;
+  }
+  .alerts-banner.active { display: block; }
+  .alerts-banner-inner {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; font-size: 12px; font-weight: 700; min-height: 36px;
+  }
+  .alert-icon { flex-shrink: 0; font-size: 14px; }
+  .alert-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .alert-count {
+    flex-shrink: 0; background: rgba(255,255,255,0.25);
+    border-radius: 10px; padding: 2px 8px; font-size: 10px; font-weight: 800;
+  }
+  .alert-severity-watch .alerts-banner-inner, .alert-severity-watch { background: #B8860B; }
+  .alert-severity-advisory .alerts-banner-inner, .alert-severity-advisory { background: #5B7BA3; }
+  .alerts-detail {
+    display: none; background: #2a1a1a;
+    max-height: 200px; overflow-y: auto; border-bottom: 2px solid var(--nj-red);
+  }
+  .alerts-detail.open { display: block; }
+  .alert-item {
+    padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px; line-height: 1.5;
+  }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-item-title { font-weight: 700; color: var(--nj-orange); margin-bottom: 3px; }
+  .alert-item-areas { color: var(--nj-gray); font-size: 11px; margin-bottom: 3px; }
+  .alert-item-desc {
+    color: #ccc; font-size: 11px;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  /* UPDATE BAR */
+  .update-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 14px; font-size: 10px; color: var(--nj-gray); background: rgba(0,0,0,0.25);
+  }
+  .update-bar button {
+    background: none; border: 1px solid var(--nj-border); color: var(--nj-gray);
+    font-family: inherit; font-size: 10px; padding: 2px 8px;
+    border-radius: 4px; cursor: pointer; transition: all 0.2s;
+  }
+  .update-bar button:hover { border-color: var(--nj-green); color: var(--nj-green); }
+
+  /* MAP */
+  .map-section {
+    position: relative; background: var(--nj-map-bg);
+    padding: 6px 0; overflow: hidden;
+  }
+  .map-wrapper {
+    position: relative; width: 100%; max-width: 340px; margin: 0 auto;
+  }
+  .map-wrapper svg { width: 100%; height: auto; display: block; }
+  .map-marker { cursor: pointer; }
+  .map-marker:hover .marker-bg { fill: #d0d8e2; }
+  .map-marker.selected .marker-bg { fill: var(--nj-green); stroke: #5a9a28; }
+  .map-marker.selected .marker-temp { fill: var(--nj-white); }
+  .map-marker.selected .marker-label-text { fill: var(--nj-charcoal); font-weight: 800; }
+  .marker-bg {
+    fill: white; stroke: #8898aa; stroke-width: 1; transition: fill 0.15s;
+  }
+  .marker-temp {
+    font-family: 'Libre Franklin', sans-serif; font-size: 12px; font-weight: 800;
+    fill: var(--nj-charcoal); text-anchor: middle; pointer-events: none;
+  }
+  .marker-label-text {
+    font-family: 'Libre Franklin', sans-serif; font-size: 7.5px; font-weight: 600;
+    fill: #445; text-anchor: middle; pointer-events: none;
+  }
+
+  /* FORECAST PANEL */
+  .forecast-panel { padding: 0 14px 14px; }
+  .forecast-location-name {
+    font-size: 16px; font-weight: 800; padding: 12px 0 2px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .loc-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--nj-green); display: inline-block;
+  }
+  .forecast-current {
+    font-size: 12px; color: var(--nj-gray);
+    margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--nj-border);
+  }
+  .forecast-days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .forecast-day-card {
+    background: var(--nj-card); border-radius: var(--radius);
+    padding: 10px 8px; text-align: center;
+    border: 1px solid var(--nj-border); transition: border-color 0.2s;
+  }
+  .forecast-day-card:first-child { border-color: var(--nj-green); }
+  .day-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--nj-gray); margin-bottom: 6px;
+  }
+  .forecast-day-card:first-child .day-label { color: var(--nj-green); }
+  .day-icon { font-size: 26px; margin-bottom: 4px; }
+  .day-temps {
+    display: flex; justify-content: center; align-items: baseline;
+    gap: 4px; margin-bottom: 4px;
+  }
+  .day-high { font-size: 20px; font-weight: 800; color: var(--nj-white); }
+  .day-low { font-size: 13px; font-weight: 600; color: var(--nj-gray); }
+  .day-desc {
+    font-size: 10px; color: var(--nj-gray); font-weight: 500; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .day-wind { font-size: 9px; color: #666E80; margin-top: 4px; font-weight: 500; }
+  .forecast-empty {
+    text-align: center; padding: 24px 14px;
+    color: var(--nj-gray); font-size: 13px;
+  }
+  .forecast-empty .prompt-icon { font-size: 28px; margin-bottom: 6px; opacity: 0.5; }
+  .loading-spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid var(--nj-border); border-top-color: var(--nj-green);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay {
+    position: absolute; inset: 0; background: rgba(202,218,232,0.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .loading-overlay.active { opacity: 1; pointer-events: auto; }
+  .loading-overlay .loading-spinner { width: 24px; height: 24px; border-width: 3px; }
+  .footer {
+    padding: 10px 14px; font-size: 9px; color: #555;
+    text-align: center; border-top: 1px solid var(--nj-border); line-height: 1.5;
+  }
+  .footer a { color: var(--nj-green); text-decoration: none; }
+  .error-toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--nj-red); color: white; padding: 10px 18px;
+    border-radius: var(--radius); font-size: 12px; font-weight: 600;
+    z-index: 100; transition: transform 0.3s ease; max-width: 90%; text-align: center;
+  }
+  .error-toast.visible { transform: translateX(-50%) translateY(0); }
+  @media (max-width: 380px) {
+    .forecast-days { gap: 5px; }
+    .forecast-day-card { padding: 8px 5px; }
+    .day-high { font-size: 18px; }
+    .day-icon { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="widget-container">
+  <header class="header">
+    <div class="header-logo">
+      <img src="data:image/jpeg;base64,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" alt="NJ.com">
+    </div>
+    <div class="header-right">
+      <span class="header-weather-icon">🌤️</span>
+      <span class="header-title">N.J. weather</span>
+      <span style="font-size:9px;color:rgba(255,255,255,0.5);font-weight:500;margin-left:4px;">Tap for 3-day forecast</span>
+    </div>
+  </header>
+
+  <div class="alerts-banner" id="alertsBanner" onclick="toggleAlerts()">
+    <div class="alerts-banner-inner">
+      <span class="alert-icon">⚠</span>
+      <span class="alert-text" id="alertText">Loading alerts...</span>
+      <span class="alert-count" id="alertCount"></span>
+    </div>
+  </div>
+  <div class="alerts-detail" id="alertsDetail"></div>
+
+  <div class="update-bar">
+    <span id="updateTime">Loading forecast data...</span>
+    <button onclick="refreshAll()">↻ Refresh</button>
+  </div>
+
+  <div class="map-section">
+    <div class="loading-overlay" id="mapLoading"><div class="loading-spinner"></div></div>
+    <div class="map-wrapper">
+      <svg viewBox="0 0 340 560" xmlns="http://www.w3.org/2000/svg" id="njMap">
+        <rect width="340" height="560" fill="var(--nj-map-bg)" rx="6"/>
+        <path id="njOutline" d="M141.6,294.1L167.7,281.7L170.7,276.2L162.8,264.6L148.1,249.7L115.6,221.1L113.7,213.2L114.0,194.5L108.9,189.0L94.2,184.4L91.9,162.6L93.1,149.7L97.2,144.1L103.3,145.0L107.5,141.2L116.9,125.3L105.6,103.3L103.1,102.1L103.9,98.4L119.2,89.1L130.4,77.7L129.5,74.3L144.6,57.8L147.9,44.8L158.7,28.2L175.2,20.0L306.3,97.1L299.8,121.8L286.7,148.6L284.9,158.7L282.6,158.4L275.4,166.4L273.5,171.5L258.0,172.8L255.8,175.5L253.8,190.6L248.2,192.9L248.6,199.1L244.3,206.0L246.1,211.1L254.6,214.8L255.0,217.4L260.3,213.1L260.2,215.0L266.7,213.2L289.2,222.6L290.3,215.8L286.6,208.6L292.5,216.4L292.6,246.5L278.4,315.1L273.1,361.3L249.6,405.9L243.5,414.6L238.0,416.2L239.1,423.8L234.1,432.2L222.4,443.9L221.4,447.5L203.5,457.5L188.4,472.3L172.0,499.0L173.4,502.7L161.5,519.8L159.2,526.4L147.5,537.5L136.1,540.0L129.9,537.5L133.5,521.3L142.0,503.5L143.7,490.7L131.4,484.0L120.5,483.0L121.4,480.9L119.4,478.6L107.7,479.4L102.5,486.2L98.1,481.5L96.2,472.7L85.7,466.0L84.1,460.5L80.8,459.6L78.0,462.7L70.7,450.8L65.5,451.6L59.9,443.5L54.6,440.9L49.1,430.7L37.5,426.1L36.5,418.4L39.0,417.6L41.4,401.0L34.3,395.0L33.7,389.9L39.1,384.3L49.0,364.0L57.4,353.0L75.1,342.8L90.8,339.3L129.4,300.2L141.6,294.1Z"
+          fill="var(--nj-map-land)" stroke="#9AACBE" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="forecast-panel" id="forecastPanel">
+    <div class="forecast-empty" id="forecastEmpty">
+      <div class="prompt-icon">📍</div>
+      Select a location on the map
+    </div>
+    <div id="forecastContent" style="display:none;">
+      <div class="forecast-location-name">
+        <span class="loc-dot"></span>
+        <span id="forecastLocName">--</span>
+      </div>
+      <div class="forecast-current" id="forecastCurrent">--</div>
+      <div class="forecast-days" id="forecastDays"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Data: <a href="https://weather.gov" target="_blank">National Weather Service</a> / NOAA<br>
+    &copy; NJ Advance Media / NJ.com
+  </div>
+</div>
+<div class="error-toast" id="errorToast"></div>
+
+<script>
+const LOCATIONS = [
+  { id: 'sussex', name: 'Sussex', lat: 41.2098, lon: -74.6076, mapX: 189.5, mapY: 51.6 },
+  { id: 'morristown', name: 'Morristown', lat: 40.7968, lon: -74.4815, mapX: 210.1, mapY: 140.0 },
+  { id: 'newark', name: 'Newark', lat: 40.7357, lon: -74.1724, mapX: 260.7, mapY: 153.1 },
+  { id: 'newbrunswick', name: 'New Brunswick', lat: 40.4862, lon: -74.4518, mapX: 215.0, mapY: 206.5 },
+  { id: 'trenton', name: 'Trenton', lat: 40.2206, lon: -74.7699, mapX: 162.9, mapY: 263.4 },
+  { id: 'tomsriver', name: 'Toms River', lat: 39.9537, lon: -74.1979, mapX: 256.5, mapY: 320.5 },
+  { id: 'atlanticcity', name: 'Atlantic City', lat: 39.3643, lon: -74.4229, mapX: 219.7, mapY: 446.7 },
+  { id: 'vineland', name: 'Vineland', lat: 39.4863, lon: -75.026, mapX: 121.0, mapY: 420.6 },
+  { id: 'capemay', name: 'Cape May', lat: 38.9351, lon: -74.906, mapX: 140.7, mapY: 538.6 }
+];
+
+function getWeatherEmoji(forecast) {
+  const s = (forecast || '').toLowerCase();
+  if (s.includes('thunder') || s.includes('tstorm')) return '⛈️';
+  if (s.includes('snow') || s.includes('blizzard')) return '🌨️';
+  if (s.includes('ice') || s.includes('sleet') || s.includes('freezing')) return '🧊';
+  if (s.includes('rain') && !s.includes('chance')) return '🌧️';
+  if (s.includes('showers') || s.includes('drizzle')) return '🌦️';
+  if ((s.includes('chance') || s.includes('slight')) && (s.includes('rain') || s.includes('showers'))) return '🌦️';
+  if (s.includes('fog') || s.includes('haze') || s.includes('mist')) return '🌫️';
+  if (s.includes('overcast')) return '☁️';
+  if (s.includes('cloud')) return '☁️';
+  if (s.includes('partly') || s.includes('mostly sunny')) return '⛅';
+  if (s.includes('sunny') || s.includes('clear')) return '☀️';
+  if (s.includes('wind')) return '💨';
+  return '🌤️';
+}
+
+let selectedLocation = null;
+let forecastCache = {};
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderMapMarkers();
+  fetchAlerts();
+  loadAllForecasts();
+});
+
+function renderMapMarkers() {
+  const svg = document.getElementById('njMap');
+  LOCATIONS.forEach(loc => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.classList.add('map-marker');
+    g.setAttribute('data-id', loc.id);
+    g.addEventListener('click', () => selectLocation(loc.id));
+
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.classList.add('marker-bg');
+    bg.setAttribute('x', loc.mapX - 16);
+    bg.setAttribute('y', loc.mapY - 10);
+    bg.setAttribute('width', '32');
+    bg.setAttribute('height', '20');
+    bg.setAttribute('rx', '5');
+    g.appendChild(bg);
+
+    const tempText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    tempText.classList.add('marker-temp');
+    tempText.setAttribute('x', loc.mapX);
+    tempText.setAttribute('y', loc.mapY + 4);
+    tempText.setAttribute('id', 'temp-' + loc.id);
+    tempText.textContent = '···';
+    g.appendChild(tempText);
+
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.classList.add('marker-label-text');
+    label.setAttribute('x', loc.mapX);
+    label.setAttribute('y', loc.mapY + 20);
+    label.textContent = loc.name;
+    g.appendChild(label);
+
+    svg.appendChild(g);
+  });
+}
+
+function selectLocation(id) {
+  selectedLocation = id;
+  document.querySelectorAll('.map-marker').forEach(m => m.classList.remove('selected'));
+  const marker = document.querySelector('.map-marker[data-id="' + id + '"]');
+  if (marker) marker.classList.add('selected');
+  const loc = LOCATIONS.find(l => l.id === id);
+  const cached = forecastCache[id];
+  document.getElementById('forecastEmpty').style.display = 'none';
+  document.getElementById('forecastContent').style.display = 'block';
+  document.getElementById('forecastLocName').textContent = loc.name;
+  if (cached) { renderForecast(cached); }
+  else {
+    document.getElementById('forecastCurrent').innerHTML = '<span class="loading-spinner"></span> Loading forecast...';
+    document.getElementById('forecastDays').innerHTML = '';
+    fetchForecastFor(loc);
+  }
+}
+
+async function loadAllForecasts() {
+  document.getElementById('mapLoading').classList.add('active');
+  await Promise.allSettled(LOCATIONS.map(loc => fetchForecastFor(loc, true)));
+  document.getElementById('mapLoading').classList.remove('active');
+  document.getElementById('updateTime').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+async function fetchForecastFor(loc, silent) {
+  try {
+    const hdr = { 'User-Agent': 'NJcom-Weather/1.0 (news@njadvancemedia.com)', 'Accept': 'application/geo+json' };
+    const ptRes = await fetch('https://api.weather.gov/points/' + loc.lat + ',' + loc.lon, { headers: hdr });
+    if (!ptRes.ok) throw new Error('Point API ' + ptRes.status);
+    const ptData = await ptRes.json();
+    const fcRes = await fetch(ptData.properties.forecast, { headers: hdr });
+    if (!fcRes.ok) throw new Error('Forecast API ' + fcRes.status);
+    const fcData = await fcRes.json();
+    const periods = fcData.properties.periods;
+    const days = []; let i = 0, dc = 0;
+    while (i < periods.length && dc < 3) {
+      const p = periods[i];
+      if (p.isDaytime) {
+        const n = periods[i+1];
+        days.push({ name: p.name, high: p.temperature, low: n ? n.temperature : null,
+          shortForecast: p.shortForecast, windSpeed: p.windSpeed, windDirection: p.windDirection });
+        dc++; i += 2;
+      } else {
+        if (dc === 0) {
+          days.push({ name: p.name, high: null, low: p.temperature,
+            shortForecast: p.shortForecast, windSpeed: p.windSpeed, windDirection: p.windDirection });
+          dc++;
+        }
+        i++;
+      }
+    }
+    const result = { periods, days };
+    forecastCache[loc.id] = result;
+    const ft = days[0] ? (days[0].high !== null ? days[0].high : days[0].low) : null;
+    const te = document.getElementById('temp-' + loc.id);
+    if (te && ft !== null) te.textContent = ft + '°';
+    if (selectedLocation === loc.id && !silent) renderForecast(result);
+  } catch (err) {
+    console.error('Forecast error ' + loc.name, err);
+    const te = document.getElementById('temp-' + loc.id);
+    if (te) te.textContent = '--';
+    if (selectedLocation === loc.id && !silent)
+      document.getElementById('forecastCurrent').textContent = 'Unable to load forecast. Try refreshing.';
+  }
+}
+
+function renderForecast(data) {
+  const { days, periods } = data;
+  if (!days || !days.length) { document.getElementById('forecastCurrent').textContent = 'No data.'; return; }
+  const f = periods[0], em = getWeatherEmoji(f.shortForecast);
+  document.getElementById('forecastCurrent').innerHTML =
+    em + ' Now: ' + f.shortForecast + ' &middot; ' + f.temperature + '°' + f.temperatureUnit + ' &middot; Wind ' + f.windSpeed + ' ' + f.windDirection;
+  const c = document.getElementById('forecastDays'); c.innerHTML = '';
+  days.forEach((d, idx) => {
+    const emoji = getWeatherEmoji(d.shortForecast);
+    const card = document.createElement('div');
+    card.className = 'forecast-day-card';
+    const hs = d.high !== null ? d.high + '°' : '--';
+    const ls = d.low !== null ? d.low + '°' : '--';
+    const lbl = idx === 0 ? (d.name.toLowerCase().includes('tonight') ? 'TONIGHT' : 'TODAY')
+      : (d.name.length > 9 ? d.name.substring(0,9) : d.name);
+    card.innerHTML = '<div class="day-label">' + lbl + '</div>'
+      + '<div class="day-icon">' + emoji + '</div>'
+      + '<div class="day-temps"><span class="day-high">' + hs + '</span>'
+      + '<span class="day-low">' + (d.high !== null && d.low !== null ? '/ ' + ls : (d.low !== null ? ls : '')) + '</span></div>'
+      + '<div class="day-desc">' + d.shortForecast + '</div>'
+      + '<div class="day-wind">' + d.windSpeed + ' ' + d.windDirection + '</div>';
+    c.appendChild(card);
+  });
+}
+
+async function fetchAlerts() {
+  try {
+    const res = await fetch('https://api.weather.gov/alerts/active?area=NJ', {
+      headers: { 'User-Agent': 'NJcom-Weather/1.0 (news@njadvancemedia.com)', 'Accept': 'application/geo+json' }
+    });
+    if (!res.ok) throw new Error('Alerts API ' + res.status);
+    const data = await res.json();
+    const alerts = (data.features || []).map(f => f.properties);
+    if (!alerts.length) { document.getElementById('alertsBanner').classList.remove('active'); return; }
+    const banner = document.getElementById('alertsBanner');
+    banner.classList.add('active');
+    const hasSevere = alerts.some(a => ['Extreme','Severe'].includes(a.severity));
+    const hasWarning = alerts.some(a => a.event && a.event.toLowerCase().includes('warning'));
+    const hasWatch = alerts.some(a => a.event && a.event.toLowerCase().includes('watch'));
+    banner.className = 'alerts-banner active';
+    if (!hasSevere && !hasWarning) {
+      if (hasWatch) banner.classList.add('alert-severity-watch');
+      else banner.classList.add('alert-severity-advisory');
+    }
+    document.getElementById('alertText').textContent = alerts[0].event || 'Weather Alert';
+    document.getElementById('alertCount').textContent = alerts.length > 1 ? alerts.length + ' alerts' : '1 alert';
+    document.getElementById('alertsDetail').innerHTML = alerts.map(a =>
+      '<div class="alert-item"><div class="alert-item-title">⚠ ' + (a.event||'Alert') + '</div>'
+      + '<div class="alert-item-areas">' + (a.areaDesc||'') + '</div>'
+      + '<div class="alert-item-desc">' + (a.description ? a.description.substring(0,280) + (a.description.length>280?'...':'') : '') + '</div></div>'
+    ).join('');
+  } catch (err) { console.error('Alerts error:', err); }
+}
+
+function toggleAlerts() { document.getElementById('alertsDetail').classList.toggle('open'); }
+
+function refreshAll() {
+  forecastCache = {};
+  document.querySelectorAll('[id^="temp-"]').forEach(el => el.textContent = '···');
+  document.getElementById('updateTime').innerHTML = '<span class="loading-spinner"></span> Refreshing...';
+  fetchAlerts();
+  loadAllForecasts().then(() => {
+    if (selectedLocation && forecastCache[selectedLocation]) renderForecast(forecastCache[selectedLocation]);
+  });
+}
+</script>
+</body>
+</html>
