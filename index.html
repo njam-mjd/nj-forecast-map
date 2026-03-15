@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  html, body { margin:0; padding:0; width:100%; overflow-x:hidden; }
   :root {
     --nj-charcoal:#1B1B1B; --nj-dark:#222233; --nj-green:#84c341;
     --nj-orange:#FF6B35; --nj-red:#E8333A; --nj-white:#FFFFFF;
@@ -22,7 +23,7 @@
     line-height:1.4; -webkit-font-smoothing:antialiased;
   }
   .widget-container {
-    max-width:480px; margin:0 auto;
+    width:100%; margin:0;
     background:var(--nj-dark); min-height:100dvh;
     display:flex; flex-direction:column;
   }
@@ -193,7 +194,7 @@
 
   /* MAP */
   #map {
-    flex:1; min-height:580px; z-index:1;
+    flex:1; min-height:580px; z-index:1; width:100%;
   }
   .leaflet-container { background:#f2efe9 !important; }
   /* County label styling */
@@ -306,7 +307,7 @@ function initMap() {
     attributionControl: false,
     zoomSnap: 0.1,
     minZoom: 7, maxZoom: 14
-  }).setView([40.14, -74.73], 7.8);
+  }).setView([40.14, -74.73], 8.3);
 
   // Standard OSM tile layer
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
